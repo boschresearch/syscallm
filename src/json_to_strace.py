@@ -50,8 +50,8 @@ def process_model_directory(model_dir_path):
         process_run_directory(run_dir_path)
 
 
-def main(json_dir_path):
-    """Main function to process all model directories."""
+def process_all_models(json_dir_path):
+    """Process all model directories in the given JSON directory."""
     
     for model in os.listdir(json_dir_path):
         model_dir_path = os.path.join(json_dir_path, model)
@@ -61,11 +61,11 @@ def main(json_dir_path):
 if __name__ == "__main__":
     # parse command line arguments
     parser = argparse.ArgumentParser(description="Process JSON files to strace commands.")
-    parser.add_argument("json_dir_path", type=str, help="Relative path to the directory containing JSON files.")
+    parser.add_argument("--json_dir_path", type=str, help="Relative path to the directory containing JSON files.")
     args = parser.parse_args()
 
     # get current directory path and json directory path
     cur_dir_path = os.getcwd()
     json_dir_path = os.path.join(cur_dir_path, args.json_dir_path)
 
-    main(json_dir_path)
+    process_all_models(json_dir_path)

@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 
 def generate_json_content(id, fault):
     """Generate JSON content based on the faults."""
@@ -60,7 +61,7 @@ def process_model_directory(model_dir_path, output_dir):
         process_run_directory(run_dir_path, output_dir)
 
 
-def main(strace_dir, output_dir):
+def process_all_models(strace_dir, output_dir):
     # create output directory if it does not exist
     os.makedirs(output_dir, exist_ok=True)
 
@@ -71,7 +72,15 @@ def main(strace_dir, output_dir):
 
 
 if __name__ == "__main__":
-    strace_dir = "/home/jom8be/workspaces/llm-safety-fuzzing/strace"
-    output_dir = "/home/jom8be/workspaces/llm-safety-fuzzing/config"
+    # parse command line arguments
+    parser = argparse.ArgumentParser(description="Process JSON files to strace commands.")
+    parser.add_argument("--strace_dir_path", type=str, help="Relative path to the directory containing files to generated strace fault injection parameter.")
+    parser.add_argument("--output_dir_path", type=str, help="Relative path to the directory to store the generated JSON files.")
+    args = parser.parse_args()
 
-    main(strace_dir, output_dir)
+    # get current directory path and json directory path
+    cur_dir_path = os.getcwd()
+    strace_dir_path = os.path.join(cur_dir_path, args.strace_dir_path)
+    output_dir_path = os.path.join(cur_dir_path, args.output_dir_path)
+
+    process_all_models(strace_dir_path, output_dir_path)

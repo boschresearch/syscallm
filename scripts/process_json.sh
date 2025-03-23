@@ -6,4 +6,4 @@ WORKING_DIR="$(dirname "$SCRIPT_DIR")"
 ### assumption: the json file is already created on the GPU
 
 # covert json files to strace command options
-python3 ${WORKING_DIR}/src/json_to_strace.py json
+python3 ${WORKING_DIR}/src/main.py --json_dir_path ${WORKING_DIR}/json --strace_dir_path ${WORKING_DIR}/strace --output_dir_path ${WORKING_DIR}/config
