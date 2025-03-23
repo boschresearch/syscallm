@@ -1,6 +1,7 @@
 import os
 import argparse
 import json_to_strace
+import filter_strace
 import strace_to_config
 
 if __name__ == "__main__":
@@ -18,5 +19,5 @@ if __name__ == "__main__":
     output_dir_path = os.path.join(cur_dir_path, args.output_dir_path)
 
     json_to_strace.process_all_models(json_dir_path)
-    # TODO: filter out strace files that are not used in the application under test
+    filter_strace.process_all_models(strace_dir_path)
     strace_to_config.process_all_models(strace_dir_path, output_dir_path)
