@@ -26,7 +26,7 @@ def parse_strace_file(file_path):
     return [line.strip() for line in lines if line.strip()]
 
 
-def process_run_directory(run_dir_path, output_dir):
+def process_run_directory(run_dir_path):
     """Process all strace files in a run directory."""
     for filename in os.listdir(run_dir_path):
         if filename.endswith(".strace"):
@@ -45,7 +45,10 @@ def process_run_directory(run_dir_path, output_dir):
                 json_content = generate_json_content(id, strace_param)
 
                 # output file path
+                output_dir = os.path.dirname(strace_file_path).replace("strace", "config")
                 output_file_path = os.path.join(output_dir, f"{id}.json")
+
+                os.makedirs(output_dir, exist_ok=True)
 
                 # write JSON content to file
                 with open(output_file_path, 'w') as json_file:
@@ -54,33 +57,28 @@ def process_run_directory(run_dir_path, output_dir):
                 print(f"Generated JSON file: {output_file_path}")
 
 
-def process_model_directory(model_dir_path, output_dir):
+def process_model_directory(model_dir_path):
     """Process all run directories in a model directory."""
     for run in os.listdir(model_dir_path):
         run_dir_path = os.path.join(model_dir_path, run)
-        process_run_directory(run_dir_path, output_dir)
+        process_run_directory(run_dir_path)
 
 
-def process_all_models(strace_dir, output_dir):
-    # create output directory if it does not exist
-    os.makedirs(output_dir, exist_ok=True)
-
+def process_all_models(strace_dir):
     """Main function to process all model directories."""
     for model in os.listdir(strace_dir):
         model_dir_path = os.path.join(strace_dir, model)
-        process_model_directory(model_dir_path, output_dir)
+        process_model_directory(model_dir_path)
 
 
 if __name__ == "__main__":
     # parse command line arguments
     parser = argparse.ArgumentParser(description="Process JSON files to strace commands.")
-    parser.add_argument("--strace_dir_path", type=str, help="Relative path to the directory containing files to generated strace fault injection parameter.")
-    parser.add_argument("--output_dir_path", type=str, help="Relative path to the directory to store the generated JSON files.")
+    parser.add_argument("--strace-dir-path", type=str, help="Relative path to the directory containing files to generated strace fault injection parameter.")
     args = parser.parse_args()
 
     # get current directory path and json directory path
     cur_dir_path = os.getcwd()
     strace_dir_path = os.path.join(cur_dir_path, args.strace_dir_path)
-    output_dir_path = os.path.join(cur_dir_path, args.output_dir_path)
 
-    process_all_models(strace_dir_path, output_dir_path)
+    process_all_models(strace_dir_path)
