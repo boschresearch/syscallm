@@ -1,8 +1,6 @@
 import os
 import argparse
-
-# TODO: better way of filtering syscalls
-filter_only = ["access", "arch_prctl", "brk", "close", "dup", "execve", "exit_group", "fcntl", "futex", "getcwd", "getdents64", "getegid", "geteuid", "getgid", "getpid", "getrandom", "getuid", "ioctl", "lseek", "mmap", "mprotect", "munmap", "newfstatat", "openat", "pread64", "prlimit64", "read", "readlink", "rseq", "rt_sigaction", "set_robust_list", "set_tid_address", "sysinfo", "write"]
+import app_syscalls
 
 def delete_file(file_path):
     """Delete a file."""
@@ -16,8 +14,10 @@ def delete_file(file_path):
 def process_run_directory(run_dir_path):
     """Process all strace files in a run directory."""
     for filename in os.listdir(run_dir_path):
-        if filename.endswith(".strace"):
-            if os.path.splitext(filename)[0] not in filter_only:
+        file_path = os.path.join(run_dir_path, filename)
+        if os.path.isfile(file_path) and filename.endswith(".strace"):
+            base_filename = os.path.splitext(filename)[0]
+            if base_filename not in app_syscalls.get_app_syscalls().keys():
                 strace_file_path = os.path.join(run_dir_path, filename)
                 delete_file(strace_file_path)
 
