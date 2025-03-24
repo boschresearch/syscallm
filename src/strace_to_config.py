@@ -73,7 +73,7 @@ def process_all_models(strace_dir):
 
 if __name__ == "__main__":
     # parse command line arguments
-    parser = argparse.ArgumentParser(description="Process JSON files to strace commands.")
+    parser = argparse.ArgumentParser(description="Process strace files to safety-fuzzing testbed config commands.")
     parser.add_argument("--strace-dir-path", type=str, help="Relative path to the directory containing files to generated strace fault injection parameter.")
     args = parser.parse_args()
 
