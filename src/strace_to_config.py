@@ -19,7 +19,7 @@ def generate_json_content(id, fault):
     }
 
 
-def parse_strace_file(file_path):
+def get_strace_params(file_path):
     """Parse the strace file and extract faults."""
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -32,7 +32,7 @@ def process_run_directory(run_dir_path):
         if filename.endswith(".strace"):
             strace_file_path = os.path.join(run_dir_path, filename)
 
-            strace_params = parse_strace_file(strace_file_path)
+            strace_params = get_strace_params(strace_file_path)
 
             # 1 injection = 1 config file
             for i, strace_param in enumerate(strace_params):
