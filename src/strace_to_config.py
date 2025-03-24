@@ -34,7 +34,7 @@ def process_strace_file(strace_file_path):
         # syscall name
         syscall = strace_param.split(":")[0].split("=")[1]
         # id
-        id = syscall + str(i)
+        id = syscall + str(i + 1)
 
         # output file path
         output_dir_path = os.path.dirname(strace_file_path).replace("strace", "config")
