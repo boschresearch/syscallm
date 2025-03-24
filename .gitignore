@@ -1,0 +1,5 @@
+json/
+strace/
+config/
+config_random/
+**/__pycache__/
