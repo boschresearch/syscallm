@@ -1,6 +1,6 @@
 import os
 import argparse
-import json_to_strace
+import inject_what
 import filter_strace
 import strace_to_config
 import random_strace
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     if os.path.exists(config_dir_path):
         os.system(f"rm -r {config_dir_path}")
 
-    json_to_strace.process_all_models(json_dir_path)
+    inject_what.process_all_models(json_dir_path)
     filter_strace.process_all_models(strace_dir_path)
     strace_to_config.process_all_models(strace_dir_path)
     random_strace.process_all_models(config_dir_path)
