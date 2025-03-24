@@ -22,7 +22,7 @@ def get_random_config(json_content):
         output_str = re.sub(r"retval=\d+", f"retval={str(random_number)}", fault)
 
     # update the json content with the random values
-    json_content["syslog_monitor_config"]["faults"] = output_str
+    json_content["syslog_monitor_config"]["faults"] = [output_str]
 
     return json_content
 
