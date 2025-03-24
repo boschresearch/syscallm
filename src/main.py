@@ -1,5 +1,4 @@
 import os
-import argparse
 import inject_what
 import filter_strace
 import inject_when
@@ -7,14 +6,8 @@ import strace_to_config
 import random_strace
 
 if __name__ == "__main__":
-    # parse command line arguments
-    parser = argparse.ArgumentParser(description="Process JSON files to strace commands.")
-    parser.add_argument("--json-dir-path", type=str, help="Relative path to the directory containing JSON files.")
-    args = parser.parse_args()
-
-    # get current directory path and json directory path
     cur_dir_path = os.getcwd()
-    json_dir_path = os.path.join(cur_dir_path, args.json_dir_path)
+    json_dir_path = os.path.join(cur_dir_path, "json")
     strace_dir_path = os.path.join(cur_dir_path, "strace")
     config_dir_path = os.path.join(cur_dir_path, "config")
     config_random_dir_path = os.path.join(cur_dir_path, "config_random")

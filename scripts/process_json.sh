@@ -6,4 +6,4 @@ WORKING_DIR="$(dirname "$SCRIPT_DIR")"
 ### assumption: the json file is already created on the GPU
 
 # covert json files to strace command options
-python3 ${WORKING_DIR}/src/main.py --json-dir-path ${WORKING_DIR}/json
+python3 ${WORKING_DIR}/src/main.py
