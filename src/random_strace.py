@@ -38,11 +38,13 @@ def process_run_directory(run_dir_path):
 
             random_json_content = get_random_config(json_content)
 
-            output_dir_path = file_path.replace("config", "config_random")
-            os.makedirs(os.path.dirname(output_dir_path), exist_ok=True)
+            output_file_path = file_path.replace("config", "config_random")
+            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
-            with open(output_dir_path, 'w') as file:
+            with open(output_file_path, 'w') as file:
                 json.dump(random_json_content, file, indent=4)
+
+            print(f"Generated JSON file: {output_file_path}")
                 
 
 def process_model_directory(model_dir_path):
