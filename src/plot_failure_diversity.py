@@ -1,105 +1,121 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# file paths
-llm_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/result.csv'
-random_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/result_random.csv'
 
-# read the CSV files into pandas DataFrames
-llm_data = pd.read_csv(llm_generated_file)
-random_data = pd.read_csv(random_generated_file)
+def read_data(llm_file, random_file):
+    llm_data = pd.read_csv(llm_file)
+    random_data = pd.read_csv(random_file)
+    return llm_data, random_data
 
-# count the sum of True values for each column (excluding the 'id' column)
-llm_true_counts = llm_data.iloc[:, 1:].sum().astype(int)
-random_true_counts = random_data.iloc[:, 1:].sum().astype(int)
 
-# calculate the percentage of True values for each column
-llm_percentages = (llm_true_counts / len(llm_data) * 100).round(2)
-random_percentages = (random_true_counts / len(random_data) * 100).round(2)
+def calculate_true_counts(data):
+    true_counts = data.iloc[:, 1:].sum().astype(int)
+    percentages = (true_counts / len(data) * 100).round(2)
+    return true_counts, percentages
 
-# print the results
-print("LLM-Generated")
-print(pd.DataFrame({'Count': llm_true_counts, 'Percentage': llm_percentages}))
 
-print("\nRandom-Generated")
-print(pd.DataFrame({'Count': random_true_counts, 'Percentage': random_percentages}))
+def add_syscall_column(data):
+    data['syscall'] = data['id'].apply(lambda x: x.split('_')[0])
+    return data
 
-# add a new column "syscall" to both datasets
-llm_data['syscall'] = llm_data['id'].apply(lambda x: x.split('_')[0])
-random_data['syscall'] = random_data['id'].apply(lambda x: x.split('_')[0])
 
-# find and print the IDs that resulted in silent_data_corruption for each dataset
-llm_silent_data_corruption_ids = llm_data[llm_data['silent_data_corruption'] == True]['id'].tolist()
-random_silent_data_corruption_ids = random_data[random_data['silent_data_corruption'] == True]['id'].tolist()
+def get_silent_data_corruption_ids(data):
+    return data[data['silent_data_corruption'] == True]['id'].tolist()
 
-print("\nLLM-Generated: IDs with silent_data_corruption:")
-print(llm_silent_data_corruption_ids)
 
-print("\nRandom-Generated: IDs with silent_data_corruption:")
-print(random_silent_data_corruption_ids)
+def get_silent_data_corruption_syscalls(data):
+    return set(data[data['silent_data_corruption'] == True]['syscall'].tolist())
 
-llm_silent_data_corruption = set(llm_data[llm_data['silent_data_corruption'] == True]['syscall'].tolist())
-random_silent_data_corruption = set(random_data[random_data['silent_data_corruption'] == True]['syscall'].tolist())
 
-print("\nLLM-Generated: syscalls with silent_data_corruption:")
-print(llm_silent_data_corruption)
+def plot_failure_types_by_syscall(data, title):
+    failure_types = data.columns[1:-1]  # Exclude 'id' and 'syscall' columns
+    failure_counts_by_syscall = data.groupby('syscall')[failure_types].sum()
 
-print("\nRandom-Generated: syscalls with silent_data_corruption:")
-print(random_silent_data_corruption)
+    colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
+    ax = failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
 
-# PLOT 1: Failure Types by Syscall
+    plt.title(title, color='black', fontsize=14)
+    plt.xlabel('Syscall', color='black', fontsize=12)
+    plt.ylabel('Count', color='black', fontsize=12)
+    plt.xticks(rotation=45, color='black')
+    plt.yticks(color='black')
+    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
 
-# count the occurrences of each failure type for each syscall
-failure_types = llm_data.columns[1:-1]  # Exclude 'id' and 'syscall' columns
-failure_counts_by_syscall = llm_data.groupby('syscall')[failure_types].sum()
 
-# define colors that work in both color and grayscale
-colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
+def plot_silent_data_corruption_by_syscall(llm_data, random_data):
+    llm_syscall_counts = llm_data[llm_data['silent_data_corruption'] == True]['syscall'].value_counts()
+    random_syscall_counts = random_data[random_data['silent_data_corruption'] == True]['syscall'].value_counts()
 
-# plot the data
-ax = failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
+    failure_counts = pd.DataFrame({
+        'LLM-Generated': llm_syscall_counts,
+        'Random-Generated': random_syscall_counts
+    }).fillna(0).astype(int)
 
-plt.title('Failure Types by Syscall (LLM-Generated)', color='black', fontsize=14)
-plt.xlabel('Syscall', color='black', fontsize=12)
-plt.ylabel('Count', color='black', fontsize=12)
-plt.xticks(rotation=45, color='black')
-plt.yticks(color='black')
+    colors = ['#1F77B4', '#FF7F0E']
+    ax = failure_counts.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
 
-# move legend below the plot and make it multi-column
-plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+    plt.title('Failure Counts by Syscall', color='black', fontsize=14)
+    plt.xlabel('Syscall', color='black', fontsize=12)
+    plt.ylabel('Count', color='black', fontsize=12)
+    plt.xticks(rotation=45, color='black')
+    plt.yticks(color='black')
+    plt.legend(facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
 
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.tight_layout()
-plt.show()
 
-# PLOT 2: Silent Data Corruption by Syscall
+def main():
+    # File paths
+    llm_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/result.csv'
+    random_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/result_random.csv'
 
-# count occurrences of each syscall for failures in both datasets
-llm_syscall_counts = llm_data[llm_data['silent_data_corruption'] == True]['syscall'].value_counts()
-random_syscall_counts = random_data[random_data['silent_data_corruption'] == True]['syscall'].value_counts()
+    # Read data
+    llm_data, random_data = read_data(llm_generated_file, random_generated_file)
 
-# create a DataFrame for plotting
-failure_counts = pd.DataFrame({
-    'LLM-Generated': llm_syscall_counts,
-    'Random-Generated': random_syscall_counts
-}).fillna(0).astype(int)
+    # Calculate true counts and percentages
+    llm_true_counts, llm_percentages = calculate_true_counts(llm_data)
+    random_true_counts, random_percentages = calculate_true_counts(random_data)
 
-# define grayscale-friendly colors
-colors = ['#1F77B4', '#FF7F0E']
+    # Print results
+    print("LLM-Generated")
+    print(pd.DataFrame({'Count': llm_true_counts, 'Percentage': llm_percentages}))
 
-# create bar plot
-ax = failure_counts.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
+    print("\nRandom-Generated")
+    print(pd.DataFrame({'Count': random_true_counts, 'Percentage': random_percentages}))
 
-# titles and labels
-plt.title('Failure Counts by Syscall', color='black', fontsize=14)
-plt.xlabel('Syscall', color='black', fontsize=12)
-plt.ylabel('Count', color='black', fontsize=12)
-plt.xticks(rotation=45, color='black')
-plt.yticks(color='black')
+    # Add syscall column
+    llm_data = add_syscall_column(llm_data)
+    random_data = add_syscall_column(random_data)
 
-# move legend below the plot and make it multi-column
-plt.legend(facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+    # Get silent data corruption IDs and syscalls
+    llm_silent_data_corruption_ids = get_silent_data_corruption_ids(llm_data)
+    random_silent_data_corruption_ids = get_silent_data_corruption_ids(random_data)
 
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.tight_layout()
-plt.show()
+    print("\nLLM-Generated: IDs with silent_data_corruption:")
+    print(llm_silent_data_corruption_ids)
+
+    print("\nRandom-Generated: IDs with silent_data_corruption:")
+    print(random_silent_data_corruption_ids)
+
+    llm_silent_data_corruption = get_silent_data_corruption_syscalls(llm_data)
+    random_silent_data_corruption = get_silent_data_corruption_syscalls(random_data)
+
+    print("\nLLM-Generated: syscalls with silent_data_corruption:")
+    print(llm_silent_data_corruption)
+
+    print("\nRandom-Generated: syscalls with silent_data_corruption:")
+    print(random_silent_data_corruption)
+
+    # Plot failure types by syscall
+    plot_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
+
+    # Plot silent data corruption by syscall
+    plot_silent_data_corruption_by_syscall(llm_data, random_data)
+
+
+if __name__ == "__main__":
+    main()
