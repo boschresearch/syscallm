@@ -136,7 +136,7 @@ if __name__ == "__main__":
     plt.title(f"Syntax Validity across Different Models", fontsize=16)
     plt.xticks(x + width, labels, fontsize=12)
     plt.yticks(fontsize=12)
-    plt.legend(fontsize=12)  # Move legend outside
+    plt.legend(fontsize=12)
     plt.tight_layout()
 
     plt.grid(axis='y', linestyle='--', alpha=0.7)
