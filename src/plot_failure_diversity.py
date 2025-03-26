@@ -57,12 +57,14 @@ failure_counts = pd.DataFrame({
     'Random-Generated': random_syscall_counts
 }).fillna(0).astype(int)
 
-# plot the data
-failure_counts.plot(kind='bar', figsize=(10, 6))
-plt.title('Failure Counts by Syscall')
-plt.xlabel('Syscall')
-plt.ylabel('Count')
-plt.xticks(rotation=45)
-plt.legend(title='Dataset')
+# plot the data in grayscale
+failure_counts.plot(kind='bar', figsize=(4, 4), color=['gray', 'lightgray'])
+plt.title('Failure Counts by Syscall', color='black', fontsize=14)
+plt.xlabel('Syscall', color='black', fontsize=12)
+plt.ylabel('Count', color='black', fontsize=12)
+plt.xticks(rotation=45, color='black')
+plt.yticks(color='black')
+plt.legend(facecolor='white', edgecolor='black', loc='upper center', bbox_to_anchor=(0.5, -0.4), ncol=2)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.show()
