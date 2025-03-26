@@ -12,10 +12,14 @@ random_data = pd.read_csv(random_generated_file)
 llm_true_counts = llm_data.iloc[:, 1:].sum().astype(int)
 random_true_counts = random_data.iloc[:, 1:].sum().astype(int)
 
-# print the results
-print("LLM-Generated Data True Counts:")
-print(llm_true_counts)
+# calculate the percentage of True values for each column
+llm_percentages = (llm_true_counts / len(llm_data) * 100).round(2)
+random_percentages = (random_true_counts / len(random_data) * 100).round(2)
 
-print("\nRandom-Generated Data True Counts:")
-print(random_true_counts)
+# print the results
+print("LLM-Generated")
+print(pd.DataFrame({'Count': llm_true_counts, 'Percentage': llm_percentages}))
+
+print("\nRandom-Generated")
+print(pd.DataFrame({'Count': random_true_counts, 'Percentage': random_percentages}))
 
