@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -34,10 +35,9 @@ def get_silent_data_corruption_syscalls(data):
 
 def plot_failure_types_by_syscall(data, title):
     # plot failure types grouped by syscall
-    failure_types = data.columns[1:-1]  # exclude 'id' and 'syscall' columns
+    failure_types = [col for col in data.columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
     failure_counts_by_syscall = data.groupby('syscall')[failure_types].sum()
 
-    colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
     ax = failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
 
     plt.title(title, color='black', fontsize=14)
@@ -61,7 +61,6 @@ def plot_silent_data_corruption_by_syscall(llm_data, random_data):
         'Random-Generated': random_syscall_counts
     }).fillna(0).astype(int)
 
-    colors = ['#1F77B4', '#FF7F0E']
     ax = failure_counts.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
 
     plt.title('Failure Counts by Syscall', color='black', fontsize=14)
