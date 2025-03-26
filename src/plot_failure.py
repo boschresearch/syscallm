@@ -45,6 +45,7 @@ def plot_failure_types_by_syscall(data, title):
     plt.ylabel('Count', color='black', fontsize=12)
     plt.xticks(rotation=45, color='black')
     plt.yticks(color='black')
+    plt.ylim(0, 740)
     plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
