@@ -47,7 +47,34 @@ print(llm_silent_data_corruption)
 print("\nRandom-Generated: syscalls with silent_data_corruption:")
 print(random_silent_data_corruption)
 
-# count the occurrences of each syscall for failures in both datasets
+# PLOT 1: Failure Types by Syscall
+
+# count the occurrences of each failure type for each syscall
+failure_types = llm_data.columns[1:-1]  # Exclude 'id' and 'syscall' columns
+failure_counts_by_syscall = llm_data.groupby('syscall')[failure_types].sum()
+
+# define colors that work in both color and grayscale
+colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
+
+# plot the data
+ax = failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
+
+plt.title('Failure Types by Syscall (LLM-Generated)', color='black', fontsize=14)
+plt.xlabel('Syscall', color='black', fontsize=12)
+plt.ylabel('Count', color='black', fontsize=12)
+plt.xticks(rotation=45, color='black')
+plt.yticks(color='black')
+
+# move legend below the plot and make it multi-column
+plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+# PLOT 2: Silent Data Corruption by Syscall
+
+# count occurrences of each syscall for failures in both datasets
 llm_syscall_counts = llm_data[llm_data['silent_data_corruption'] == True]['syscall'].value_counts()
 random_syscall_counts = random_data[random_data['silent_data_corruption'] == True]['syscall'].value_counts()
 
@@ -57,14 +84,22 @@ failure_counts = pd.DataFrame({
     'Random-Generated': random_syscall_counts
 }).fillna(0).astype(int)
 
-# plot the data in grayscale
-failure_counts.plot(kind='bar', figsize=(4, 4), color=['gray', 'lightgray'])
+# define grayscale-friendly colors
+colors = ['#1F77B4', '#FF7F0E']
+
+# create bar plot
+ax = failure_counts.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
+
+# titles and labels
 plt.title('Failure Counts by Syscall', color='black', fontsize=14)
 plt.xlabel('Syscall', color='black', fontsize=12)
 plt.ylabel('Count', color='black', fontsize=12)
 plt.xticks(rotation=45, color='black')
 plt.yticks(color='black')
-plt.legend(facecolor='white', edgecolor='black', loc='upper center', bbox_to_anchor=(0.5, -0.4), ncol=2)
+
+# move legend below the plot and make it multi-column
+plt.legend(facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.show()

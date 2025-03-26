@@ -117,43 +117,36 @@ if __name__ == "__main__":
 
         model_counts[model] = counts
 
-    plt.figure(figsize=(6, 5))
-
     labels = list(model_counts[models[0]].keys())
-    # positions of the bars
     x = np.arange(len(labels))
     width = 0.15
 
     plt.axhline(y=total_count, color='black', linestyle='--', label='Total')
 
-    for i, model in enumerate(models):
+    # High-contrast colors that work in grayscale
+    colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
+
+    for i, (model, color) in enumerate(zip(models, colors)):
         counts = model_counts[model]
         values = [counts[label][0] for label in labels]
 
-        # set greyscale color based on model index, ensuring no white color
-        grey_value = 0.25 + (i / len(models)) * 0.6
-        color = (grey_value, grey_value, grey_value)
+        plt.bar(x + i * width, values, width, label=model, color=color, edgecolor='black')
 
-        plt.bar(x + i * width, values, width, label=model, color=color)
-
-    plt.xlabel('File Type', fontsize=15)
     plt.ylabel('Count', fontsize=15)
-    plt.title(f"Syntax Correctness across Different Models", fontsize=16)
-    plt.xticks(x + width, [label for label in labels], fontsize=12)
+    plt.title(f"Syntax Validity across Different Models", fontsize=16)
+    plt.xticks(x + width, labels, fontsize=12)
     plt.yticks(fontsize=12)
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=12)  # Move legend outside
     plt.tight_layout()
 
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
-    # add percentage labels above the bars
+    # Add percentage labels above bars
     for i, model in enumerate(models):
         counts = model_counts[model]
         for j, label in enumerate(labels):
             total_value = counts[label][0]
             percentage = (total_value / total_count) * 100
-
-            # place text at the top of the bar
             plt.text(x[j] + i * width, total_value, f'{percentage:.1f}%', ha='center', va='bottom', fontsize=11)
 
     plt.show()
