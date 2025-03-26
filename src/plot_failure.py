@@ -82,6 +82,10 @@ def main():
     # read data
     llm_data, random_data = read_data(llm_generated_file, random_generated_file)
 
+    # drop 'timeout' column
+    llm_data = llm_data.drop(columns=['timeout'])
+    random_data = random_data.drop(columns=['timeout'])
+
     # calculate true counts and percentages
     llm_true_counts, llm_percentages = calculate_true_counts(llm_data)
     random_true_counts, random_percentages = calculate_true_counts(random_data)
