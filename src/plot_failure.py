@@ -118,6 +118,7 @@ def main():
 
     # plot failure types by syscall
     plot_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
+    plot_failure_types_by_syscall(random_data, 'Failure Types by Syscall (Random-Generated)')
 
     # plot silent data corruption by syscall
     plot_silent_data_corruption_by_syscall(llm_data, random_data)
