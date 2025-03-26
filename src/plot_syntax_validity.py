@@ -96,7 +96,7 @@ def get_stuck_in_loop_by_error(invalid, json_dir):
                 stuck_in_loop.append(filename)
 
     return stuck_in_loop
-            
+
 if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     stdout_dir = os.path.join(base_dir, 'stdout')
@@ -112,44 +112,47 @@ if __name__ == "__main__":
 
         counts = {
             'Valid': [len(valid_run) for valid_run in valid],
-            'Invalid': [len(invalid_run) for invalid_run in invalid],
-            'Invalid Stuck in Loop': [len(invalid_stuck_in_loop_run) for invalid_stuck_in_loop_run in invalid_stuck_in_loop],
-            'Invalid Format': [len(invalid_format_run) for invalid_format_run in invalid_format]
+            'Invalid': [len(invalid_run) for invalid_run in invalid]
         }
 
-        means = {key: np.mean([counts[key] for _ in range(runs)]) for key in counts}
-        std_devs = {key: np.std([counts[key] for _ in range(runs)]) for key in counts}
+        model_counts[model] = counts
 
-        model_counts[model] = (means, std_devs)
+    plt.figure(figsize=(8, 6))
 
-    plt.figure(figsize=(12, 6))
-
-    labels = list(model_counts[models[0]][0].keys())
+    labels = list(model_counts[models[0]].keys())
+    # positions of the bars
     x = np.arange(len(labels))
-    width = 0.2
+    width = 0.15
 
     plt.axhline(y=total_count, color='black', linestyle='--', label='Total')
 
     for i, model in enumerate(models):
-        means, std_devs = model_counts[model]
-        values = [means[label] for label in labels]
-        errors = [std_devs[label] for label in labels]
+        counts = model_counts[model]
+        values = [counts[label][0] for label in labels]
 
-        plt.bar(x + i * width, values, width, yerr=errors, label=model, capsize=5)
+        # set greyscale color based on model index, ensuring no white color
+        grey_value = 0.25 + (i / len(models)) * 0.6
+        color = (grey_value, grey_value, grey_value)
+
+        plt.bar(x + i * width, values, width, label=model, capsize=5, color=color)
 
     plt.xlabel('File Type')
     plt.ylabel('Count')
-    plt.title(f"Average Syntax Correctness over {runs} runs for different models")
+    plt.title(f"Syntax Correctness across Different Models (1 run)")
     plt.xticks(x + width / 2, [label for label in labels])
     plt.legend()
 
     plt.grid(True)
 
+    # add percentage labels above the bars
     for i, model in enumerate(models):
-        means, std_devs = model_counts[model]
+        counts = model_counts[model]
         for j, label in enumerate(labels):
-            percentage = (means[label] / total_count) * 100
-            print(f'{model} {label}: {percentage:.1f}% / std_dev: {std_devs[label]}')
-            plt.text(x[j] + i * width, values[j] + errors[j], f'{percentage:.1f}%', ha='center', va='bottom')
+            total_value = counts[label][0]
+            percentage = (total_value / total_count) * 100
+            print(f'{model} {label}: {percentage:.1f}%')
+
+            # place text at the top of the bar
+            plt.text(x[j] + i * width, total_value, f'{percentage:.1f}%', ha='center', va='bottom')
 
     plt.show()
