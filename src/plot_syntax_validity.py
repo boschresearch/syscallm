@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
         model_counts[model] = counts
 
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(6, 5))
 
     labels = list(model_counts[models[0]].keys())
     # positions of the bars
@@ -142,8 +142,9 @@ if __name__ == "__main__":
     plt.xticks(x + width, [label for label in labels], fontsize=12)
     plt.yticks(fontsize=12)
     plt.legend(fontsize=12)
+    plt.tight_layout()
 
-    plt.grid(True)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # add percentage labels above the bars
     for i, model in enumerate(models):
