@@ -33,6 +33,27 @@ def get_silent_data_corruption_syscalls(data):
     return set(data[data['silent_data_corruption'] == True]['syscall'].tolist())
 
 
+def plot_normalized_failure_types_by_syscall(data, title):
+    # plot normalized failure types grouped by syscall
+    failure_types = [col for col in data.columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
+    failure_counts_by_syscall = data.groupby('syscall')[failure_types].sum()
+
+    # Normalize the counts by dividing by the total counts per syscall
+    normalized_failure_counts = failure_counts_by_syscall.div(failure_counts_by_syscall.sum(axis=1), axis=0)
+
+    ax = normalized_failure_counts.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
+
+    plt.title(title, color='black', fontsize=14)
+    plt.xlabel('Syscall', color='black', fontsize=12)
+    plt.ylabel('Proportion', color='black', fontsize=12)
+    plt.xticks(rotation=45, color='black')
+    plt.yticks(color='black')
+    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=4)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_failure_types_by_syscall(data, title):
     # plot failure types grouped by syscall
     failure_types = [col for col in data.columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
@@ -124,6 +145,10 @@ def main():
     # plot failure types by syscall
     plot_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
     plot_failure_types_by_syscall(random_data, 'Failure Types by Syscall (Random-Generated)')
+
+    # plot normalized failure types by syscall
+    plot_normalized_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
+    plot_normalized_failure_types_by_syscall(random_data, 'Failure Types by Syscall (Random-Generated)')
 
     # plot silent data corruption by syscall
     plot_silent_data_corruption_by_syscall(llm_data, random_data)
