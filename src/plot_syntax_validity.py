@@ -134,13 +134,14 @@ if __name__ == "__main__":
         grey_value = 0.25 + (i / len(models)) * 0.6
         color = (grey_value, grey_value, grey_value)
 
-        plt.bar(x + i * width, values, width, label=model, capsize=5, color=color)
+        plt.bar(x + i * width, values, width, label=model, color=color)
 
-    plt.xlabel('File Type')
-    plt.ylabel('Count')
-    plt.title(f"Syntax Correctness across Different Models (1 run)")
-    plt.xticks(x + width / 2, [label for label in labels])
-    plt.legend()
+    plt.xlabel('File Type', fontsize=15)
+    plt.ylabel('Count', fontsize=15)
+    plt.title(f"Syntax Correctness across Different Models", fontsize=16)
+    plt.xticks(x + width, [label for label in labels], fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(fontsize=12)
 
     plt.grid(True)
 
@@ -150,9 +151,8 @@ if __name__ == "__main__":
         for j, label in enumerate(labels):
             total_value = counts[label][0]
             percentage = (total_value / total_count) * 100
-            print(f'{model} {label}: {percentage:.1f}%')
 
             # place text at the top of the bar
-            plt.text(x[j] + i * width, total_value, f'{percentage:.1f}%', ha='center', va='bottom')
+            plt.text(x[j] + i * width, total_value, f'{percentage:.1f}%', ha='center', va='bottom', fontsize=11)
 
     plt.show()
