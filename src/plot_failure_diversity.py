@@ -24,11 +24,20 @@ print("\nRandom-Generated")
 print(pd.DataFrame({'Count': random_true_counts, 'Percentage': random_percentages}))
 
 # find and print the IDs that resulted in silent_data_corruption for each dataset
-llm_silent_data_corruption_ids = llm_data[llm_data['silent_data_corruption'] == True]['id']
-random_silent_data_corruption_ids = random_data[random_data['silent_data_corruption'] == True]['id']
+llm_silent_data_corruption_ids = llm_data[llm_data['silent_data_corruption'] == True]['id'].tolist()
+random_silent_data_corruption_ids = random_data[random_data['silent_data_corruption'] == True]['id'].tolist()
 
-print("\nLLM-Generated IDs with silent_data_corruption:")
-print(llm_silent_data_corruption_ids.tolist())
+print("\nLLM-Generated: IDs with silent_data_corruption:")
+print(llm_silent_data_corruption_ids)
 
-print("\nRandom-Generated IDs with silent_data_corruption:")
-print(random_silent_data_corruption_ids.tolist())
+print("\nRandom-Generated: IDs with silent_data_corruption:")
+print(random_silent_data_corruption_ids)
+
+llm_silent_data_corruption = list(set(id.split('_')[0] for id in llm_silent_data_corruption_ids))
+random_silent_data_corruption = list(set(id.split('_')[0] for id in random_silent_data_corruption_ids))
+
+print("\nLLM-Generated: syscalls with silent_data_corruption:")
+print(llm_silent_data_corruption)
+
+print("\nRandom-Generated: syscalls with silent_data_corruption:")
+print(random_silent_data_corruption)
