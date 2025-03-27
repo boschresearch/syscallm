@@ -18,12 +18,13 @@ def compare_syscalls(base_file, compare_file):
 
 def main():
     # file paths for each Ubuntu version
-    ubuntu_18_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/llm-syscall/data/syscall/syscalls_ubuntu_18.04.txt"
-    ubuntu_20_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/llm-syscall/data/syscall/syscalls_ubuntu_20.04.txt"
-    ubuntu_22_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/llm-syscall/data/syscall/syscalls_ubuntu_22.04.txt"
+    ubuntu_18_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_18.04.6_syscalls.txt"
+    ubuntu_20_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_20.04.6_syscalls.txt"
+    ubuntu_22_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_22.04.6_syscalls.txt"
+    ubuntu_24_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_24.04.2_syscalls.txt"
 
     # compare syscalls between versions
-    versions = [("18.04", ubuntu_18_04), ("20.04", ubuntu_20_04), ("22.04", ubuntu_22_04)]
+    versions = [("18.04", ubuntu_18_04), ("20.04", ubuntu_20_04), ("22.04", ubuntu_22_04), ("24.04", ubuntu_24_04)]
 
     for i in range(len(versions) - 1):
         base_version, base_file = versions[i]
