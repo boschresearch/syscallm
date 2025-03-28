@@ -1,6 +1,2 @@
-json/
-strace/
-config/
-config_random/
 data/
 **/__pycache__/

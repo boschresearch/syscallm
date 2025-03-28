@@ -98,8 +98,7 @@ def get_stuck_in_loop_by_error(invalid, json_dir):
     return stuck_in_loop
 
 if __name__ == "__main__":
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    stdout_dir = os.path.join(base_dir, 'stdout')
+    base_dir = os.path.abspath(os.path.join(__file__, "../../data"))
 
     total_count = get_total_count(base_dir)
 

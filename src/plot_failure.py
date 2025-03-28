@@ -98,8 +98,8 @@ def plot_silent_data_corruption_by_syscall(llm_data, random_data):
 
 def main():
     # file paths
-    llm_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/result.csv'
-    random_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/result_random.csv'
+    llm_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/test_result/result.csv'
+    random_generated_file = '/home/jom8be/workspaces/llm-safety-fuzzing/data/test_result/result_random.csv'
 
     # read data
     llm_data, random_data = read_data(llm_generated_file, random_generated_file)
