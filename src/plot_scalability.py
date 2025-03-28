@@ -16,6 +16,14 @@ def compare_syscalls(base_file, compare_file):
     return added, deleted
 
 
+def find_unavailable_syscalls(base_syscalls, missing_file):
+    missing_syscalls = read_syscalls(missing_file)
+
+    missing_in_base = base_syscalls - missing_syscalls
+
+    return missing_in_base
+
+
 def main():
     # file paths for each Ubuntu version
     kernel_5_4_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_5.4.0.txt"
@@ -26,15 +34,32 @@ def main():
     # compare syscalls between versions
     versions = [("5.4.0", kernel_5_4_0), ("5.15.0", kernel_5_15_0), ("6.8.0", kernel_6_8_0), ("6.11.0", kernel_6_11_0)]
 
+    # file paths for missing syscalls
+    missing_5_15_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/missing_syscalls_5.15.0.txt"
+    missing_6_8_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/missing_syscalls_6.8.0.txt"
+    missing_6_11_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/missing_syscalls_6.11.0.txt"
+
+    missing = [
+        missing_5_15_0,
+        missing_6_8_0,
+        missing_6_11_0
+    ]
+
     for i in range(len(versions) - 1):
         base_version, base_file = versions[i]
         compare_version, compare_file = versions[i + 1]
 
         added, deleted = compare_syscalls(base_file, compare_file)
 
-        print(f"Changes from Ubuntu {base_version} to {compare_version}:")
+        print(f"Changes from kernel {base_version} to {compare_version}:")
         print(f"  Added syscalls: {sorted(added)}")
         print(f"  Deleted syscalls: {sorted(deleted)}")
+
+        # compare syscalls with missing
+        added_and_no_man = find_unavailable_syscalls(added, missing[i])
+        print(f"  Added syscalls that have man page: {sorted(added_and_no_man)}")
+        print()
+
 
 
 if __name__ == "__main__":
