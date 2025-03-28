@@ -18,13 +18,13 @@ def compare_syscalls(base_file, compare_file):
 
 def main():
     # file paths for each Ubuntu version
-    ubuntu_18_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_18.04.6_syscalls.txt"
-    ubuntu_20_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_20.04.6_syscalls.txt"
-    ubuntu_22_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_22.04.6_syscalls.txt"
-    ubuntu_24_04 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/ubuntu_24.04.2_syscalls.txt"
+    kernel_5_4_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_5.4.0.txt"
+    kernel_5_15_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_5.15.0.txt"
+    kernel_6_8_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_6.8.0.txt"
+    kernel_6_11_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_6.11.0.txt"
 
     # compare syscalls between versions
-    versions = [("18.04", ubuntu_18_04), ("20.04", ubuntu_20_04), ("22.04", ubuntu_22_04), ("24.04", ubuntu_24_04)]
+    versions = [("5.4.0", kernel_5_4_0), ("5.15.0", kernel_5_15_0), ("6.8.0", kernel_6_8_0), ("6.11.0", kernel_6_11_0)]
 
     for i in range(len(versions) - 1):
         base_version, base_file = versions[i]
