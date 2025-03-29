@@ -6,11 +6,11 @@ import strace_to_config
 import random_strace
 
 if __name__ == "__main__":
-    cur_dir_path = os.getcwd()
-    json_dir_path = os.path.join(cur_dir_path, "json")
-    strace_dir_path = os.path.join(cur_dir_path, "strace")
-    config_dir_path = os.path.join(cur_dir_path, "config")
-    config_random_dir_path = os.path.join(cur_dir_path, "config_random")
+    data_dir_path = os.path.join(os.getcwd(), "data")
+    json_dir_path = os.path.join(data_dir_path, "json")
+    strace_dir_path = os.path.join(data_dir_path, "strace")
+    config_dir_path = os.path.join(data_dir_path, "config")
+    config_random_dir_path = os.path.join(data_dir_path, "config_random")
 
     # delete the directory if it already exists
     if os.path.exists(strace_dir_path):
