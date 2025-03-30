@@ -9,7 +9,7 @@ def get_random_number(mode):
     if mode == "success":
         return random.randint(0, 4294963200)
     elif mode == "error_code":
-        return random.randint(0, 4095)
+        return random.randint(1, 4095)
 
 
 def get_random_config(json_content, mode):
