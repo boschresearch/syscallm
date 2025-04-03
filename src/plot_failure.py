@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+plt.rcParams["font.family"] = "Times New Roman"
+
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
 
 def read_data(llm_file, random_file):

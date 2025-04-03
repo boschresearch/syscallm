@@ -4,6 +4,8 @@ import numpy as np
 from utils import is_json, get_total_count
 import config
 
+plt.rcParams["font.family"] = "Times New Roman"
+
 runs = config.runs
 models = config.models
 
@@ -135,7 +137,7 @@ if __name__ == "__main__":
     plt.title(f"Syntax Validity across Different Models", fontsize=16)
     plt.xticks(x + width, labels, fontsize=12)
     plt.yticks(fontsize=12)
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=10)
     plt.tight_layout()
 
     plt.grid(axis='y', linestyle='--', alpha=0.7)
