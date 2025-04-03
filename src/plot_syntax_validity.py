@@ -134,7 +134,7 @@ if __name__ == "__main__":
         plt.bar(x + i * width, values, width, label=model, color=color, edgecolor='black')
 
     plt.ylabel('Count', fontsize=15)
-    plt.title(f"Syntax Validity across Different Models", fontsize=16)
+    plt.title(f"Syntax Validity", fontsize=16)
     plt.xticks(x + width, labels, fontsize=12)
     plt.yticks(fontsize=12)
     plt.legend(fontsize=10)
