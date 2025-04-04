@@ -98,6 +98,28 @@ def plot_failure_types_by_syscall(data, title):
     plt.show()
 
 
+def plot_average_failure_types_by_syscall(datas, title):
+    # calculate average failure types grouped by syscall
+    failure_types = [col for col in datas[0].columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
+    failure_counts_by_syscall_list = [data.groupby('syscall')[failure_types].sum() for data in datas]
+
+    # calculate the average failure counts across all data
+    average_failure_counts_by_syscall = sum(failure_counts_by_syscall_list) / len(failure_counts_by_syscall_list)
+
+    ax = average_failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
+
+    plt.title(title, color='black', fontsize=14)
+    plt.xlabel('Syscall', color='black', fontsize=12)
+    plt.ylabel('Average Count', color='black', fontsize=12)
+    plt.xticks(rotation=45, color='black')
+    plt.yticks(color='black')
+    plt.ylim(0, 3000)
+    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_silent_data_corruption_by_syscall(llm_data, random_data):
     # plot silent data corruption counts grouped by syscall
     llm_syscall_counts = llm_data[llm_data['silent_data_corruption'] == True]['syscall'].value_counts()
@@ -174,16 +196,16 @@ def main():
         print(f"\nRandom-Generated {i + 1}: syscalls with silent_data_corruption:")
         print(random_silent_data_corruption)
 
-    # TODO: Fair comparison
     # plot failure types by syscall
     plot_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
-    plot_failure_types_by_syscall(random_datas[0], 'Failure Types by Syscall (Random-Generated)')
+    plot_average_failure_types_by_syscall(random_datas, 'Failure Types by Syscall (Average Random-Generated)')
 
     # plot normalized failure types by syscall
-    plot_normalized_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
-    plot_normalized_failure_types_by_syscall(random_datas[0], 'Failure Types by Syscall (Random-Generated)')
+    # plot_normalized_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
+    # plot_normalized_failure_types_by_syscall(random_datas[0], 'Failure Types by Syscall (Random-Generated)')
 
-    # # plot silent data corruption by syscall
+    # TODO: Fair comparison
+    # plot silent data corruption by syscall
     plot_silent_data_corruption_by_syscall(llm_data, random_datas[0])
 
 
