@@ -28,7 +28,6 @@ if __name__ == "__main__":
 
     inject_what.process_all_models(json_dir_path, mode)
     filter_strace.process_all_models(strace_dir_path)
-    inject_when.process_all_models(strace_dir_path)
     strace_to_config.process_all_models(strace_dir_path)
     
     random_runs = 5
