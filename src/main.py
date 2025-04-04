@@ -33,7 +33,7 @@ if __name__ == "__main__":
     
     random_runs = 5
 
-    for i in range(random_runs):
+    for i in range(1, random_runs + 1):
         config_random_dir_path = os.path.join(data_dir_path, f"config_random_{i}")
 
         if os.path.exists(config_random_dir_path):
