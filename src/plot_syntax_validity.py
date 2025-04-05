@@ -116,9 +116,13 @@ if __name__ == "__main__":
             'Invalid': [len(invalid_run) for invalid_run in invalid]
         }
 
+        # Calculate standard deviation
+        counts['Valid_std'] = np.std(counts['Valid'])
+        counts['Invalid_std'] = np.std(counts['Invalid'])
+
         model_counts[model] = counts
 
-    labels = list(model_counts[models[0]].keys())
+    labels = list(model_counts[models[0]].keys())[:2]  # Exclude '_std' keys for labels
     x = np.arange(len(labels))
     width = 0.15
 
@@ -130,14 +134,15 @@ if __name__ == "__main__":
     for i, (model, color) in enumerate(zip(models, colors)):
         counts = model_counts[model]
         values = [counts[label][0] for label in labels]
+        std_devs = [counts[f"{label}_std"] for label in labels]
 
-        plt.bar(x + i * width, values, width, label=model, color=color, edgecolor='black')
+        plt.bar(x + i * width, values, width, label=model, color=color, edgecolor='black', yerr=std_devs, capsize=8)
 
     plt.ylabel('Count', fontsize=15)
     plt.title(f"Syntax Validity", fontsize=16)
     plt.xticks(x + width, labels, fontsize=12)
     plt.yticks(fontsize=12)
-    plt.legend(fontsize=10)
+    plt.legend(fontsize=10, loc='upper right', bbox_to_anchor=(1, 0.95))
     plt.tight_layout()
 
     plt.grid(axis='y', linestyle='--', alpha=0.7)
