@@ -76,7 +76,7 @@ def print_statistics(llm, random):
     avg_llm_percentages = llm_percentages.mean().round(2)
     avg_random_percentages = random_percentages.mean().round(2)
     
-    print(f"Total test counts for each run: {llm['run'].value_counts()}")    
+    print(f"Total test counts for each {llm['run'].value_counts()}")    
     print(f"---------------------------------------------------------------")
     print(f"LLM-Generated")
     print("Counts:")
