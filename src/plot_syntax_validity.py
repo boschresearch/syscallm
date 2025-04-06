@@ -128,7 +128,6 @@ if __name__ == "__main__":
 
     plt.axhline(y=total_count, color='black', linestyle='--', label='Total')
 
-    # High-contrast colors that work in grayscale
     colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
 
     for i, (model, color) in enumerate(zip(models, colors)):
