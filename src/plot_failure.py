@@ -96,63 +96,67 @@ def print_silent_data_corruption_syscalls(llm, random):
 
 
 def plot_normalized_failure_types_by_syscall(data, title):
-    # plot normalized failure types grouped by syscall
-    failure_types = [col for col in data.columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
-    failure_counts_by_syscall = data.groupby('syscall')[failure_types].sum()
+    df = data.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
 
-    # Normalize the counts by dividing by the total counts per syscall
-    normalized_failure_counts = failure_counts_by_syscall.div(failure_counts_by_syscall.sum(axis=1), axis=0)
+    df[outcome_types] = df[outcome_types].div(df[outcome_types].sum(axis=1), axis=0).mul(100)
 
-    ax = normalized_failure_counts.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
+    xtick_labels = {
+        'app_crash': 'App Crash',
+        'app_hang': 'App Hang',
+        'error_exit': 'Error Exit',
+        'silent_data_corruption': 'Silent Data Corruption',
+        'no_changes': 'No Changes'
+    }
+    
+    df.rename(columns=xtick_labels, inplace=True)
 
-    plt.title(title, color='black', fontsize=14)
-    plt.xlabel('Syscall', color='black', fontsize=12)
-    plt.ylabel('Proportion', color='black', fontsize=12)
-    plt.xticks(rotation=45, color='black')
-    plt.yticks(color='black')
-    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=4)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    plt.show()
+    ordered_columns = ['No Changes', 'App Crash', 'Error Exit', 'App Hang', 'Silent Data Corruption']
 
+    df = df[['syscall'] + ordered_columns]
 
-def plot_average_failure_types_by_syscall(datas, title):
-    # calculate average failure types grouped by syscall
-    failure_types = [col for col in datas[0].columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
-    print(failure_types)
-    failure_counts_by_syscall_list = [data.groupby('syscall')[failure_types].sum() for data in datas]
+    df_pivoted = df.pivot_table(index='syscall')
 
-    # calculate the average failure counts across all data
-    average_failure_counts_by_syscall = sum(failure_counts_by_syscall_list) / len(failure_counts_by_syscall_list)
+    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
 
-    ax = average_failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
-
-    plt.title(title, color='black', fontsize=14)
-    plt.xlabel('Syscall', color='black', fontsize=12)
-    plt.ylabel('Average Count', color='black', fontsize=12)
-    plt.xticks(rotation=45, color='black')
-    plt.yticks(color='black')
-    # plt.ylim(0, 1000)
-    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.title(title, fontsize=16)
+    plt.xlabel('Percentage (%)', fontsize=14)
+    plt.ylabel(None)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
 
 
 def plot_failure_types_by_syscall(data, title):
-    # plot failure types grouped by syscall
-    failure_types = [col for col in data.columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
-    failure_counts_by_syscall = data.groupby('syscall')[failure_types].sum()
+    df = data.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
 
-    ax = failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
+    xtick_labels = {
+        'app_crash': 'App Crash',
+        'app_hang': 'App Hang',
+        'error_exit': 'Error Exit',
+        'silent_data_corruption': 'Silent Data Corruption',
+        'no_changes': 'No Changes'
+    }
+    
+    df.rename(columns=xtick_labels, inplace=True)
 
-    plt.title(title, color='black', fontsize=14)
-    plt.xlabel('Syscall', color='black', fontsize=12)
-    plt.ylabel('Count', color='black', fontsize=12)
-    plt.xticks(rotation=45, color='black')
-    plt.yticks(color='black')
-    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    ordered_columns = ['No Changes', 'App Crash', 'Error Exit', 'App Hang', 'Silent Data Corruption']
+
+    df = df[['syscall'] + ordered_columns]
+
+    df_pivoted = df.pivot_table(index='syscall')
+
+    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
+
+    plt.title(title, fontsize=16)
+    plt.xlabel('Count', fontsize=14)
+    plt.ylabel(None)
+    plt.xticks(rotation=45, fontsize=12, ticks=range(0, 3500, 100))
+    plt.yticks(fontsize=12)
+    plt.xlim(0, 3500)
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
 
@@ -161,21 +165,25 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     llm_counts = llm[llm['silent_data_corruption'] == True]['syscall'].value_counts()
     random_counts = random[random['silent_data_corruption'] == True]['syscall'].value_counts()
 
-    df_plot = pd.DataFrame({
+    df = pd.DataFrame({
         'syscall': llm_counts.index.append(random_counts.index).unique(),
         'LLM': llm_counts,
         'Random': random_counts
     })
 
-    df_plot_long = df_plot.melt(id_vars='syscall', value_vars=['LLM', 'Random'], 
-                                var_name='type', value_name='count')
+    df = df.melt(
+        id_vars='syscall',
+        value_vars=['LLM', 'Random'],
+        var_name='type',
+        value_name='count'
+    )
     
-    df_plot_long['count'] = df_plot_long['count'].fillna(0).astype(int)
+    df['count'] = df['count'].fillna(0).astype(int)
 
     plt.figure(figsize=(6, 4))
 
     sns.barplot(
-        data=df_plot_long,
+        data=df,
         x='syscall',
         y='count',
         hue='type',
@@ -219,20 +227,19 @@ def plot_outcome_rates(llm, random):
         'no_changes': 'No Changes'
     }
 
-    df_plot = pd.melt(
-        df,
+    df = df.melt(
         id_vars=['run', 'type'],
         value_vars=outcome_types,
         var_name='outcome_type',
         value_name='rate'
     )
 
-    df_plot['outcome_type'] = df_plot['outcome_type'].map(xtick_labels)
+    df['outcome_type'] = df['outcome_type'].map(xtick_labels)
 
     plt.figure(figsize=(5, 4))
 
     sns.lineplot(
-        data=df_plot,
+        data=df,
         x='outcome_type',
         y='rate',
         hue='type',
@@ -292,28 +299,13 @@ def main():
     # plot silent data corruption by syscall
     plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
-
-
-
-
     # plot failure types by syscall
-    # plot_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
-    # plot_average_failure_types_by_syscall(random_datas, 'Failure Types by Syscall (Average Random-Generated)')
+    plot_failure_types_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
+    plot_failure_types_by_syscall(all_llm_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
 
-    # print(f"\nTotal test counts for each run: {total_count}")    
-    # print(f"\nLLM-Generated (Average over {runs} runs)")
-    # print(pd.DataFrame({
-    #     'Average %': avg_llm_failure_percentages
-    # }))
-
-    # print(f"\nRandom-Generated (Average over {runs} runs)")
-    # print(pd.DataFrame({
-    #     'Average %': avg_random_failure_percentages
-    # }))
-
-    # # plot normalized failure types by syscall
-    # plot_normalized_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
-    # # plot_normalized_failure_types_by_syscall(random_datas[0], 'Failure Types by Syscall (Random-Generated)')
+    # plot normalized failure types by syscall
+    plot_normalized_failure_types_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs, normalized)')
+    plot_normalized_failure_types_by_syscall(all_random_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs, normalized)')
 
 if __name__ == "__main__":
     main()
