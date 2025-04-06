@@ -6,7 +6,16 @@ from app_syscalls import get_app_syscalls
 
 plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
-outcome_types = [ 'app_crash', 'app_hang', 'error_exit', 'silent_data_corruption', 'no_changes']
+outcome_types = ['no_changes', 'app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
+renamed_outcome_types = ['No Changes', 'App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
+
+palette = {
+    'App Crash': colors[0],
+    'App Hang': colors[1],
+    'Error Exit': colors[2],
+    'Silent Data Corruption': colors[3],
+    'No Changes': colors[4]
+}
 
 # runs = config.runs
 runs = 3
@@ -102,18 +111,18 @@ def plot_normalized_outcome_by_syscall(data, title):
     df[outcome_types] = df[outcome_types].div(df[outcome_types].sum(axis=1), axis=0).mul(100)
 
     xtick_labels = {
+        'no_changes': 'No Changes',
         'app_crash': 'App Crash',
         'app_hang': 'App Hang',
         'error_exit': 'Error Exit',
-        'silent_data_corruption': 'Silent Data Corruption',
-        'no_changes': 'No Changes'
+        'silent_data_corruption': 'Silent Data Corruption'
     }
     
     df.rename(columns=xtick_labels, inplace=True)
 
-    df_pivoted = df.pivot_table(index='syscall')
+    df_pivoted = df.pivot_table(index='syscall')[renamed_outcome_types]
 
-    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
+    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6), color=[palette[col] for col in df_pivoted.columns])
 
     plt.title(title, fontsize=16)
     plt.xlabel('Percentage (%)', fontsize=14)
@@ -139,16 +148,16 @@ def plot_outcome_by_syscall(data, title):
     
     df.rename(columns=xtick_labels, inplace=True)
 
-    df_pivoted = df.pivot_table(index='syscall')
+    df_pivoted = df.pivot_table(index='syscall')[renamed_outcome_types]
 
-    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
+    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6), color=[palette[col] for col in df_pivoted.columns])
 
     plt.title(title, fontsize=16)
     plt.xlabel('Count', fontsize=14)
     plt.ylabel(None)
     plt.xticks(rotation=45, fontsize=12, ticks=range(0, 3500, 100))
     plt.yticks(fontsize=12)
-    plt.xlim(0, 3500)
+    plt.xlim(0, 3350)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
@@ -166,16 +175,16 @@ def plot_failure_by_syscall(data, title):
     
     df.rename(columns=xtick_labels, inplace=True)
 
-    df_pivoted = df.pivot_table(index='syscall')
+    df_pivoted = df.pivot_table(index='syscall')[['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']]
 
-    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
+    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6), color=[palette[col] for col in df_pivoted.columns])
 
     plt.title(title, fontsize=16)
     plt.xlabel('Count', fontsize=14)
     plt.ylabel(None)
     plt.xticks(rotation=45, fontsize=12, ticks=range(0, 800, 100))
     plt.yticks(fontsize=12)
-    plt.xlim(0, 800)
+    plt.xlim(0, 750)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
@@ -255,7 +264,6 @@ def plot_outcome(llm, random):
     )
 
     df['outcome_type'] = df['outcome_type'].map(xtick_labels)
-    print(df)
 
     plt.figure(figsize=(5, 4))
 
@@ -266,7 +274,7 @@ def plot_outcome(llm, random):
         hue='type',
         style='type',
         markers=True,
-        linewidth=2 
+        linewidth=2
     )
 
     plt.title(f'Injection Outcome (run={runs})', fontsize=16)
