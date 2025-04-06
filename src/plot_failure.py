@@ -1,13 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 import config
 
 plt.rcParams["font.family"] = "Times New Roman"
-
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
+outcome_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption', 'no_changes']
 
 # runs = config.runs
-runs = 1
+runs = 2
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -31,19 +32,67 @@ def add_syscall_column(data):
 
 def calculate_failure(data):
     # calculate true counts and percentages for each column
-    true_counts = data[['app_crash', 'error_exit', 'app_hang', 'silent_data_corruption', 'no_changes']].sum().astype(int)
+    true_counts = data[outcome_types].sum().astype(int)
     percentages = (true_counts / len(data) * 100).round(2)
     return true_counts, percentages
 
 
-def get_silent_data_corruption_ids(data):
-    # get ids where silent_data_corruption is true
-    return data[data['silent_data_corruption'] == True]['id'].tolist()
+def calculate_statistics(llm, random):
+    # calculate failure counts and percentages grouped by "run"
+    llm_counts = llm.groupby('run', group_keys=False).apply(
+        lambda group: calculate_failure(group)[0],
+        include_groups=False
+    )
+    llm_percentages = llm.groupby('run', group_keys=False).apply(
+        lambda group: calculate_failure(group)[1],
+        include_groups=False
+    )
+    random_counts = random.groupby('run', group_keys=False).apply(
+        lambda group: calculate_failure(group)[0],
+        include_groups=False
+    )
+    random_percentages = random.groupby('run', group_keys=False).apply(
+        lambda group: calculate_failure(group)[1],
+        include_groups=False
+    )
+    return llm_counts, llm_percentages, random_counts, random_percentages
 
 
-def get_silent_data_corruption_syscalls(data):
-    # get unique syscalls where silent_data_corruption is true
-    return set(data[data['silent_data_corruption'] == True]['syscall'].tolist())
+def print_statistics(llm, random):
+    # calculate failure counts and percentages
+    llm_counts, llm_percentages, random_counts, random_percentages = calculate_statistics(llm, random)
+
+    # average count and percentage across runs
+    avg_llm_percentages = llm_percentages.mean().round(2)
+    avg_random_percentages = random_percentages.mean().round(2)
+    
+    print(f"Total test counts for each run: {llm['run'].value_counts()}")    
+    print(f"---------------------------------------------------------------")
+    print(f"LLM-Generated")
+    print("Counts:")
+    print(llm_counts)
+    print("Percentages:")
+    print(llm_percentages)
+    print("Average Percentages:")
+    print(avg_llm_percentages.to_frame().T)
+    print(f"---------------------------------------------------------------")
+    print(f"Random-Generated")
+    print("Counts:")
+    print(random_counts)
+    print("Percentages:")
+    print(random_percentages)
+    print("Average Percentages:")
+    print(avg_random_percentages.to_frame().T)
+    print(f"---------------------------------------------------------------")
+
+
+def print_silent_data_corruption_syscalls(llm, random):
+    for run in range(1, runs + 1):
+        llm_silent_data_corruption = llm[(llm['run'] == run) & (llm['silent_data_corruption'] == True)]['syscall'].unique()
+        random_silent_data_corruption = random[(random['run'] == run) & (random['silent_data_corruption'] == True)]['syscall'].unique()
+        print(f"Run {run}:")
+        print(f"Unique syscalls with silent data corruption (LLM): {llm_silent_data_corruption}")
+        print(f"Unique syscalls with silent data corruption (Random): {random_silent_data_corruption}")
 
 
 def plot_normalized_failure_types_by_syscall(data, title):
@@ -67,28 +116,10 @@ def plot_normalized_failure_types_by_syscall(data, title):
     plt.show()
 
 
-def plot_failure_types_by_syscall(data, title):
-    # plot failure types grouped by syscall
-    failure_types = [col for col in data.columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
-    failure_counts_by_syscall = data.groupby('syscall')[failure_types].sum()
-
-    ax = failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
-
-    plt.title(title, color='black', fontsize=14)
-    plt.xlabel('Syscall', color='black', fontsize=12)
-    plt.ylabel('Count', color='black', fontsize=12)
-    plt.xticks(rotation=45, color='black')
-    plt.yticks(color='black')
-    # plt.ylim(0, 3000)
-    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.tight_layout()
-    plt.show()
-
-
 def plot_average_failure_types_by_syscall(datas, title):
     # calculate average failure types grouped by syscall
     failure_types = [col for col in datas[0].columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
+    print(failure_types)
     failure_counts_by_syscall_list = [data.groupby('syscall')[failure_types].sum() for data in datas]
 
     # calculate the average failure counts across all data
@@ -108,25 +139,116 @@ def plot_average_failure_types_by_syscall(datas, title):
     plt.show()
 
 
-def plot_silent_data_corruption_by_syscall(llm_data, random_data):
-    # plot silent data corruption counts grouped by syscall
-    llm_syscall_counts = llm_data[llm_data['silent_data_corruption'] == True]['syscall'].value_counts()
-    random_syscall_counts = random_data[random_data['silent_data_corruption'] == True]['syscall'].value_counts()
+def plot_failure_types_by_syscall(data, title):
+    # plot failure types grouped by syscall
+    failure_types = [col for col in data.columns[1:-1] if col != "no_changes"]  # exclude 'id', 'syscall', and 'no_changes' columns
+    failure_counts_by_syscall = data.groupby('syscall')[failure_types].sum()
 
-    failure_counts = pd.DataFrame({
-        'LLM-Generated': llm_syscall_counts,
-        'Random-Generated': random_syscall_counts
-    }).fillna(0).astype(int)
+    ax = failure_counts_by_syscall.plot(kind='bar', figsize=(8, 6), stacked=True, color=colors, edgecolor='black')
 
-    ax = failure_counts.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
-
-    plt.title('Syscalls resulted in Silent Data Corruption', color='black', fontsize=14)
+    plt.title(title, color='black', fontsize=14)
     plt.xlabel('Syscall', color='black', fontsize=12)
     plt.ylabel('Count', color='black', fontsize=12)
     plt.xticks(rotation=45, color='black')
     plt.yticks(color='black')
-    plt.legend(facecolor='white', edgecolor='black', loc='upper left', ncol=1)
+    plt.legend(title='Failure Type', facecolor='white', edgecolor='black', loc='upper left', ncol=1)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_silent_data_corruption_by_syscall(llm, random):
+    llm_counts = llm[llm['silent_data_corruption'] == True]['syscall'].value_counts()
+    random_counts = random[random['silent_data_corruption'] == True]['syscall'].value_counts()
+
+    df_plot = pd.DataFrame({
+        'syscall': llm_counts.index.append(random_counts.index).unique(),
+        'LLM': llm_counts,
+        'Random': random_counts
+    })
+
+    df_plot_long = df_plot.melt(id_vars='syscall', value_vars=['LLM', 'Random'], 
+                                var_name='type', value_name='count')
+    
+    df_plot_long['count'] = df_plot_long['count'].fillna(0).astype(int)
+
+    plt.figure(figsize=(6, 4))
+
+    sns.barplot(
+        data=df_plot_long,
+        x='syscall',
+        y='count',
+        hue='type',
+        edgecolor='black'
+    )
+
+    plt.title(f'Silent Data Corruption by Syscall (Accumulated over run={runs})', fontsize=16)
+    plt.xlabel(None)
+    plt.ylabel('Count', fontsize=14)
+    plt.xticks(rotation=45, fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.legend(fontsize=12)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_outcome_rates(llm, random):
+    total_count = llm['run'].value_counts()
+
+    llm_counts = llm[outcome_types].groupby(llm['run']).sum().reset_index()
+    random_counts = random[outcome_types].groupby(random['run']).sum().reset_index()
+
+    llm_counts['type'] = 'LLM'
+    random_counts['type'] = 'Random'
+
+    df = pd.concat([llm_counts, random_counts], ignore_index=True)
+
+    df[outcome_types] = df[outcome_types].astype(float)
+
+    # normalize the outcome columns by dividing by the total count for each run
+    for run in range(1, runs + 1):
+        total = total_count[run]
+        df.loc[df['run'] == run, outcome_types] = df.loc[df['run'] == run, outcome_types].div(total).mul(100).astype(float)
+    
+    xtick_labels = {
+        'app_crash': 'App Crash',
+        'app_hang': 'App Hang',
+        'error_exit': 'Error Exit',
+        'silent_data_corruption': 'Silent Data Corruption',
+        'no_changes': 'No Changes'
+    }
+
+    df_plot = pd.melt(
+        df,
+        id_vars=['run', 'type'],
+        value_vars=outcome_types,
+        var_name='outcome_type',
+        value_name='rate'
+    )
+
+    df_plot['outcome_type'] = df_plot['outcome_type'].map(xtick_labels)
+
+    plt.figure(figsize=(5, 4))
+
+    sns.lineplot(
+        data=df_plot,
+        x='outcome_type',
+        y='rate',
+        hue='type',
+        style='type',
+        markers=True,
+        linewidth=2 
+    )
+
+    plt.title(f'Injection Outcome Comparison (run={runs})', fontsize=16)
+    plt.ylabel('Average Rate (%)', fontsize=14)
+    plt.xlabel('Outcome', fontsize=14)
+    plt.xticks(rotation=15, fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.ylim(0, 100)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.legend(fontsize=12)
     plt.tight_layout()
     plt.show()
 
@@ -144,9 +266,6 @@ def main():
 
         # read data
         llm_data, random_data = read_data(llm_generated_file, random_generated_file)
-        
-        # accumulate total count
-        total_count.append(len(llm_data))
 
         # drop 'timeout' column
         llm_data = llm_data.drop(columns=['timeout'])
@@ -163,65 +282,38 @@ def main():
         # accumulate all data
         all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
         all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
+    
+    print_statistics(all_llm_data, all_random_data)
+    print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
 
-        llm_silent_data_corruption = get_silent_data_corruption_syscalls(llm_data)
-        random_silent_data_corruption = get_silent_data_corruption_syscalls(random_data)
+    # plot outcome rates for LLM and Random
+    plot_outcome_rates(all_llm_data, all_random_data)
+    
+    # plot silent data corruption by syscall
+    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
-        print(f"\nLLM-Generated#{i} - syscalls with silent_data_corruption:")
-        print(llm_silent_data_corruption)
 
-        print(f"\nRandom-Generated#{i} - syscalls with silent_data_corruption:")
-        print(random_silent_data_corruption)
 
-    # calculate failure counts and percentages grouped by "run"
-    llm_failure_counts = all_llm_data.groupby('run', group_keys=False).apply(
-        lambda group: calculate_failure(group)[0],
-        include_groups=False
-    )
-    llm_failure_percentages = all_llm_data.groupby('run', group_keys=False).apply(
-        lambda group: calculate_failure(group)[1],
-        include_groups=False
-    )
-    random_failure_counts = all_random_data.groupby('run', group_keys=False).apply(
-        lambda group: calculate_failure(group)[0],
-        include_groups=False
-    )
-    random_failure_percentages = all_random_data.groupby('run', group_keys=False).apply(
-        lambda group: calculate_failure(group)[1],
-        include_groups=False
-    )
 
-    # average count and percentage across runs
-    avg_llm_failure_counts = llm_failure_counts.mean().round(2)
-    avg_llm_failure_percentages = llm_failure_percentages.mean().round(2)
-    avg_random_failure_counts = random_failure_counts.mean().round(2)
-    avg_random_failure_percentages = random_failure_percentages.mean().round(2)
 
-    print(f"\nTotal test counts for each run: {total_count}\n")    
-    print(f"LLM-Generated (Average over {runs} runs)")
-    print(pd.DataFrame({
-        'Average Count': avg_llm_failure_counts,
-        'Average %': avg_llm_failure_percentages
-    }))
-
-    print(f"\nRandom-Generated (Average over {runs} runs)")
-    print(pd.DataFrame({
-        'Average Count': avg_random_failure_counts,
-        'Average %': avg_random_failure_percentages
-    }))
-
-    # # plot failure types by syscall
+    # plot failure types by syscall
     # plot_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
-    # # plot_average_failure_types_by_syscall(random_datas, 'Failure Types by Syscall (Average Random-Generated)')
+    # plot_average_failure_types_by_syscall(random_datas, 'Failure Types by Syscall (Average Random-Generated)')
+
+    # print(f"\nTotal test counts for each run: {total_count}")    
+    # print(f"\nLLM-Generated (Average over {runs} runs)")
+    # print(pd.DataFrame({
+    #     'Average %': avg_llm_failure_percentages
+    # }))
+
+    # print(f"\nRandom-Generated (Average over {runs} runs)")
+    # print(pd.DataFrame({
+    #     'Average %': avg_random_failure_percentages
+    # }))
 
     # # plot normalized failure types by syscall
     # plot_normalized_failure_types_by_syscall(llm_data, 'Failure Types by Syscall (LLM-Generated)')
     # # plot_normalized_failure_types_by_syscall(random_datas[0], 'Failure Types by Syscall (Random-Generated)')
-
-    # # TODO: Fair comparison
-    # # plot silent data corruption by syscall
-    # plot_silent_data_corruption_by_syscall(llm_data, random_datas[0])
-
 
 if __name__ == "__main__":
     main()
