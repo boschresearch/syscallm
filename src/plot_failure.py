@@ -95,7 +95,7 @@ def print_silent_data_corruption_syscalls(llm, random):
         print(f"Unique syscalls with silent data corruption (Random): {random_silent_data_corruption}")
 
 
-def plot_normalized_failure_types_by_syscall(data, title):
+def plot_normalized_outcome_by_syscall(data, title):
     df = data.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
 
     df[outcome_types] = df[outcome_types].div(df[outcome_types].sum(axis=1), axis=0).mul(100)
@@ -129,7 +129,7 @@ def plot_normalized_failure_types_by_syscall(data, title):
     plt.show()
 
 
-def plot_failure_types_by_syscall(data, title):
+def plot_outcome_by_syscall(data, title):
     df = data.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
 
     xtick_labels = {
@@ -201,7 +201,7 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     plt.show()
 
 
-def plot_outcome_rates(llm, random):
+def plot_outcome(llm, random):
     total_count = llm['run'].value_counts()
 
     llm_counts = llm[outcome_types].groupby(llm['run']).sum().reset_index()
@@ -248,7 +248,7 @@ def plot_outcome_rates(llm, random):
         linewidth=2 
     )
 
-    plt.title(f'Injection Outcome Comparison (run={runs})', fontsize=16)
+    plt.title(f'Injection Outcome (run={runs})', fontsize=16)
     plt.ylabel('Average Rate (%)', fontsize=14)
     plt.xlabel('Outcome', fontsize=14)
     plt.xticks(rotation=15, fontsize=12)
@@ -294,18 +294,21 @@ def main():
     print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
 
     # plot outcome rates for LLM and Random
-    plot_outcome_rates(all_llm_data, all_random_data)
+    plot_outcome(all_llm_data, all_random_data)
     
     # plot silent data corruption by syscall
     plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
     # plot failure types by syscall
-    plot_failure_types_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
-    plot_failure_types_by_syscall(all_llm_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
+    plot_outcome_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
+    plot_outcome_by_syscall(all_llm_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
+
+    plot_outcome_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
+    plot_outcome_by_syscall(all_llm_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
 
     # plot normalized failure types by syscall
-    plot_normalized_failure_types_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs, normalized)')
-    plot_normalized_failure_types_by_syscall(all_random_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs, normalized)')
+    plot_normalized_outcome_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs, normalized)')
+    plot_normalized_outcome_by_syscall(all_random_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs, normalized)')
 
 if __name__ == "__main__":
     main()
