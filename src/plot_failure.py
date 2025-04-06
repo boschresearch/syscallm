@@ -161,6 +161,37 @@ def plot_outcome_by_syscall(data, title):
     plt.show()
 
 
+def plot_failure_by_syscall(data, title):
+    df = data.groupby('syscall')[['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']].sum().div(runs).reset_index()
+
+    xtick_labels = {
+        'app_crash': 'App Crash',
+        'app_hang': 'App Hang',
+        'error_exit': 'Error Exit',
+        'silent_data_corruption': 'Silent Data Corruption'
+    }
+    
+    df.rename(columns=xtick_labels, inplace=True)
+
+    ordered_columns = ['App Crash', 'Error Exit', 'App Hang', 'Silent Data Corruption']
+
+    df = df[['syscall'] + ordered_columns]
+
+    df_pivoted = df.pivot_table(index='syscall')
+
+    ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
+
+    plt.title(title, fontsize=16)
+    plt.xlabel('Count', fontsize=14)
+    plt.ylabel(None)
+    plt.xticks(rotation=45, fontsize=12, ticks=range(0, 800, 100))
+    plt.yticks(fontsize=12)
+    plt.xlim(0, 800)
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+
 def plot_silent_data_corruption_by_syscall(llm, random):
     llm_counts = llm[llm['silent_data_corruption'] == True]['syscall'].value_counts()
     random_counts = random[random['silent_data_corruption'] == True]['syscall'].value_counts()
@@ -301,10 +332,10 @@ def main():
 
     # plot failure types by syscall
     plot_outcome_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
-    plot_outcome_by_syscall(all_llm_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
+    plot_outcome_by_syscall(all_random_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
 
-    plot_outcome_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
-    plot_outcome_by_syscall(all_llm_data, f'Random-Generated\nInjection Outcomes by Syscall (Average over {runs} runs)')
+    plot_failure_by_syscall(all_llm_data, f'LLM-Generated\nInjection Failure Outcomes by Syscall (Average over {runs} runs)')
+    plot_failure_by_syscall(all_random_data, f'Random-Generated\nInjection Failure Outcomes by Syscall (Average over {runs} runs)')
 
     # plot normalized failure types by syscall
     plot_normalized_outcome_by_syscall(all_llm_data, f'LLM-Generated\nInjection Outcomes by Syscall (Average over {runs} runs, normalized)')
