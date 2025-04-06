@@ -6,7 +6,7 @@ from app_syscalls import get_app_syscalls
 
 plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
-outcome_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption', 'no_changes']
+outcome_types = [ 'app_crash', 'app_hang', 'error_exit', 'silent_data_corruption', 'no_changes']
 
 # runs = config.runs
 runs = 3
@@ -111,10 +111,6 @@ def plot_normalized_outcome_by_syscall(data, title):
     
     df.rename(columns=xtick_labels, inplace=True)
 
-    ordered_columns = ['No Changes', 'App Crash', 'Error Exit', 'App Hang', 'Silent Data Corruption']
-
-    df = df[['syscall'] + ordered_columns]
-
     df_pivoted = df.pivot_table(index='syscall')
 
     ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
@@ -143,10 +139,6 @@ def plot_outcome_by_syscall(data, title):
     
     df.rename(columns=xtick_labels, inplace=True)
 
-    ordered_columns = ['No Changes', 'App Crash', 'Error Exit', 'App Hang', 'Silent Data Corruption']
-
-    df = df[['syscall'] + ordered_columns]
-
     df_pivoted = df.pivot_table(index='syscall')
 
     ax = df_pivoted.plot(kind='barh', stacked=True, figsize=(10, 6))
@@ -173,10 +165,6 @@ def plot_failure_by_syscall(data, title):
     }
     
     df.rename(columns=xtick_labels, inplace=True)
-
-    ordered_columns = ['App Crash', 'Error Exit', 'App Hang', 'Silent Data Corruption']
-
-    df = df[['syscall'] + ordered_columns]
 
     df_pivoted = df.pivot_table(index='syscall')
 
@@ -267,6 +255,7 @@ def plot_outcome(llm, random):
     )
 
     df['outcome_type'] = df['outcome_type'].map(xtick_labels)
+    print(df)
 
     plt.figure(figsize=(5, 4))
 
@@ -324,7 +313,6 @@ def plot_test_case_distribution(data):
 
 def main():    
     # initialize accumulators as empty Series
-    total_count = []
     all_llm_data = pd.DataFrame() 
     all_random_data = pd.DataFrame()
 
@@ -351,6 +339,11 @@ def main():
         # accumulate all data
         all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
         all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
+
+    # Reorder columns for better readability
+    column_order = ['id', 'syscall', 'run'] + outcome_types
+    all_llm_data = all_llm_data[column_order]
+    all_random_data = all_random_data[column_order]
     
     print_statistics(all_llm_data, all_random_data)
     print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
