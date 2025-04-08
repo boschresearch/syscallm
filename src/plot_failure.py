@@ -17,8 +17,7 @@ palette = {
     'No Changes': colors[4]
 }
 
-# runs = config.runs
-runs = 3
+runs = config.runs
 
 def read_data(llm_file, random_file):
     # read data from CSV files
