@@ -128,6 +128,7 @@ if __name__ == "__main__":
         data=df,
         x='model_name',
         y='count',
+        hue='model_name',
         capsize=0.2,
         err_kws={'linewidth': 1},
         palette=palette
