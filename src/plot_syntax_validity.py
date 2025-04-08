@@ -1,6 +1,9 @@
 import os
+import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
+import seaborn as sns
 from utils import is_json, get_total_count
 import config
 
@@ -106,52 +109,56 @@ if __name__ == "__main__":
 
     model_counts = {}
 
+    df = pd.DataFrame(columns=['model_name', 'run', 'count'])
+
     for model in models:
         json_dirs = [os.path.join(base_dir, 'json', model, f'run{i}') for i in range(1, runs + 1)]
 
-        valid, invalid, invalid_stuck_in_loop, invalid_format = categorize_batch(json_dirs)
+        valid, _, _, _ = categorize_batch(json_dirs)
 
-        counts = {
-            'Valid': [len(valid_run) for valid_run in valid],
-            'Invalid': [len(invalid_run) for invalid_run in invalid]
-        }
+        for run_index, valid_run in enumerate(valid, start=1):
+            df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run_index], 'count': [len(valid_run)]})], ignore_index=True)
 
-        # Calculate standard deviation
-        counts['Valid_std'] = np.std(counts['Valid'])
-        counts['Invalid_std'] = np.std(counts['Invalid'])
-
-        model_counts[model] = counts
-
-    labels = list(model_counts[models[0]].keys())[:2]  # Exclude '_std' keys for labels
-    x = np.arange(len(labels))
-    width = 0.15
-
+    plt.figure(figsize=(5, 4))
+    
     plt.axhline(y=total_count, color='black', linestyle='--', label='Total')
 
-    colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
+    palette = sns.color_palette('rocket', len(df['model_name'].unique()))
+    barplot = sns.barplot(
+        data=df,
+        x='model_name',
+        y='count',
+        capsize=0.2,
+        err_kws={'linewidth': 1},
+        palette=palette
+    )
 
-    for i, (model, color) in enumerate(zip(models, colors)):
-        counts = model_counts[model]
-        values = [counts[label][0] for label in labels]
-        std_devs = [counts[f"{label}_std"] for label in labels]
+    # Add percentage labels
+    for p in barplot.patches:
+        height = p.get_height()
+        percentage = f'{(height / total_count) * 100:.1f}%'
+        barplot.text(
+            p.get_x() + p.get_width() / 2., 
+            height / 2,
+            percentage, 
+            ha="center", 
+            va="center",
+            fontsize=15,
+            color="white"
+        )
 
-        plt.bar(x + i * width, values, width, label=model, color=color, edgecolor='black', yerr=std_devs, capsize=8)
+    model_names = df['model_name'].unique()
+    bar_handles = [mpatches.Patch(color=palette[i], label=model_names[i]) for i in range(len(model_names))]
+    line_handle = mlines.Line2D([], [], color='black', linestyle='--', label='Total')
+    handles = [line_handle] + bar_handles
 
+    plt.title("Syntax Validity", fontsize=16)
+    plt.xlabel(None)
     plt.ylabel('Count', fontsize=15)
-    plt.title(f"Syntax Validity", fontsize=16)
-    plt.xticks(x + width, labels, fontsize=12)
+    plt.xticks([])
     plt.yticks(fontsize=12)
-    plt.legend(fontsize=10, loc='upper right', bbox_to_anchor=(1, 0.95))
+    plt.legend(handles=handles, fontsize=10, loc='upper left', bbox_to_anchor=(0, 0.95))
     plt.tight_layout()
-
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-
-    # Add percentage labels above bars
-    for i, model in enumerate(models):
-        counts = model_counts[model]
-        for j, label in enumerate(labels):
-            total_value = counts[label][0]
-            percentage = (total_value / total_count) * 100
-            plt.text(x[j] + i * width, total_value, f'{percentage:.1f}%', ha='center', va='bottom', fontsize=11)
 
     plt.show()
