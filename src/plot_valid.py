@@ -131,7 +131,7 @@ if __name__ == "__main__":
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
     # figure size
-    plt.figure(figsize=(5, 4))
+    plt.figure(figsize=(6, 4.5))
     
     # total number of syscalls
     total_count = 328
@@ -150,14 +150,16 @@ if __name__ == "__main__":
         y='percentage',
         hue='model_name',
         style='model_name',
+        markers=True,
+        markersize=10,
         palette=palette
     )
 
     # plot parameters
-    plt.xlabel('Temperature', fontsize=16)
-    plt.ylabel('Percentage (%)', fontsize=16)
-    plt.xticks(fontsize=13)
-    plt.yticks(fontsize=13)
+    plt.xlabel('Temperature', fontsize=18)
+    plt.ylabel('Percentage (%)', fontsize=18)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
     plt.ylim(0, 100)
     plt.legend(fontsize=12, loc='upper right', bbox_to_anchor=(1, 0.45))
     plt.tight_layout()
