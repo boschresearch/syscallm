@@ -137,6 +137,9 @@ if __name__ == "__main__":
     total_count = 328
     plt.axhline(y=total_count, color='black', linestyle='--', label='Total Count')
 
+    # add percentage
+    df['percentage'] = (df['count'] / total_count) * 100
+
     # color
     palette = sns.color_palette('rocket', len(df['model_name'].unique()))
 
@@ -144,25 +147,20 @@ if __name__ == "__main__":
     lineplot = sns.lineplot(
         data=df,
         x='temperature',
-        y='count',
+        y='percentage',
         hue='model_name',
         style='model_name',
         palette=palette
     )
 
-    # add secondary y-axis for percentage
-    ax = lineplot.axes
-    secax = ax.secondary_yaxis('right', functions=(lambda x: (x / total_count) * 100, lambda x: (x * total_count) / 100))
-    secax.set_ylabel('Percentage (%)', fontsize=15)
-    secax.tick_params(axis='y', labelsize=13)
-
     # plot parameters
-    plt.xlabel('Temperature', fontsize=15)
-    plt.ylabel('Count', fontsize=15)
+    plt.xlabel('Temperature', fontsize=16)
+    plt.ylabel('Percentage (%)', fontsize=16)
     plt.xticks(fontsize=13)
     plt.yticks(fontsize=13)
-    plt.ylim(0, total_count + 10)
+    plt.ylim(0, 100)
     plt.legend(fontsize=12, loc='upper right', bbox_to_anchor=(1, 0.45))
     plt.tight_layout()
+    plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
     plt.show()
