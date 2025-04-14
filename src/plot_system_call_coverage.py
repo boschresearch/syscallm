@@ -46,6 +46,13 @@ def categorize_batch(json_dirs):
     
     return valid, invalid, invalid_stuck_in_loop, invalid_format
 
+def categorize(json_dir):
+    valid, invalid = categorize_valid_invalid(json_dir)
+    stuck_in_loop, invalid_format = find_why_invalid(invalid, json_dir)
+
+    return valid, invalid, stuck_in_loop, invalid_format
+
+
 def find_why_invalid(invalid, json_dir):
     invalid_stuck_in_loop = []
     invalid_format = []
@@ -103,63 +110,72 @@ def get_stuck_in_loop_by_error(invalid, json_dir):
     return stuck_in_loop
 
 if __name__ == "__main__":
-    base_dir = os.path.abspath(os.path.join(__file__, "../../data"))
+    # directory to all json data
+    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data/temperature"))
 
-    total_count = get_total_count(base_dir)
+    # directories json data for each temperature
+    temperature = ["0.3", "0.5", "0.7"]
+    temperature_dirs = [os.path.join(data_dir, f"json_{temp}") for temp in temperature]
 
-    model_counts = {}
+    df = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
 
-    df = pd.DataFrame(columns=['model_name', 'run', 'count'])
+    for temp_dir, temp in zip(temperature_dirs, temperature):
+        for model in models:
+            for run in range(1, runs + 1):
+                # directory to json data for each temperature, model, run
+                json_dir = os.path.join(temp_dir, model, f'run{run}')
 
-    for model in models:
-        json_dirs = [os.path.join(base_dir, 'json', model, f'run{i}') for i in range(1, runs + 1)]
+                # categorize valid and invalid json files
+                valid, invalid, _, _ = categorize(json_dir)
 
-        valid, _, _, _ = categorize_batch(json_dirs)
+                df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
-        for run_index, valid_run in enumerate(valid, start=1):
-            df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run_index], 'count': [len(valid_run)]})], ignore_index=True)
+                if model == "gpt-4o":
+                    print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)}, Invalid: {invalid}")
 
-    plt.figure(figsize=(5, 4))
+    # figure size
+    plt.figure(figsize=(6, 4.5))
     
-    plt.axhline(y=total_count, color='black', linestyle='--', label='Total')
+    # total number of syscalls
+    total_count = 328
+    plt.axhline(y=total_count, color='black', linestyle='--', label='Total Count')
 
+    # add percentage
+    df['percentage'] = (df['count'] / total_count) * 100
+
+    # calculate average percentage per model and temperature
+    avg_percentage = df.groupby(['model_name', 'temperature'])['percentage'].mean()
+    print("Average percentage per model and temperature:")
+    print(avg_percentage.round(2))
+
+    # calculate average count per model and temperature
+    avg_count = df.groupby(['model_name', 'temperature'])['count'].mean()
+    print("Average count per model and temperature:")
+    print(avg_count.round(2))
+
+    # color
     palette = sns.color_palette('rocket', len(df['model_name'].unique()))
-    barplot = sns.barplot(
+
+    # line plot
+    lineplot = sns.lineplot(
         data=df,
-        x='model_name',
-        y='count',
+        x='temperature',
+        y='percentage',
         hue='model_name',
-        capsize=0.2,
-        err_kws={'linewidth': 1},
+        style='model_name',
+        markers=True,
+        markersize=10,
         palette=palette
     )
 
-    # Add percentage labels
-    for p in barplot.patches:
-        height = p.get_height()
-        percentage = f'{(height / total_count) * 100:.1f}%'
-        barplot.text(
-            p.get_x() + p.get_width() / 2., 
-            height / 2,
-            percentage, 
-            ha="center", 
-            va="center",
-            fontsize=15,
-            color="white"
-        )
-
-    model_names = df['model_name'].unique()
-    bar_handles = [mpatches.Patch(color=palette[i], label=model_names[i]) for i in range(len(model_names))]
-    line_handle = mlines.Line2D([], [], color='black', linestyle='--', label='Total')
-    handles = [line_handle] + bar_handles
-
-    plt.title("Syntax Validity", fontsize=16)
-    plt.xlabel(None)
-    plt.ylabel('Count', fontsize=15)
-    plt.xticks([])
-    plt.yticks(fontsize=12)
-    plt.legend(handles=handles, fontsize=10, loc='upper left', bbox_to_anchor=(0, 0.95))
+    # plot parameters
+    plt.xlabel('Temperature', fontsize=18)
+    plt.ylabel('Percentage (%)', fontsize=18)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.ylim(0, 100)
+    plt.legend(fontsize=12, loc='upper right', bbox_to_anchor=(1, 0.45))
     plt.tight_layout()
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
     plt.show()
