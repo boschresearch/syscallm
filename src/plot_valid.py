@@ -111,7 +111,7 @@ def get_stuck_in_loop_by_error(invalid, json_dir):
 
 if __name__ == "__main__":
     # directory to all json data
-    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data"))
+    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data/temperature"))
 
     # directories json data for each temperature
     temperature = ["0.3", "0.5", "0.7"]
@@ -126,9 +126,12 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, _, _, _ = categorize(json_dir)
+                valid, invalid, _, _ = categorize(json_dir)
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
+
+                if model == "gpt-4o":
+                    print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)}, Invalid: {invalid}")
 
     # figure size
     plt.figure(figsize=(6, 4.5))
@@ -139,6 +142,16 @@ if __name__ == "__main__":
 
     # add percentage
     df['percentage'] = (df['count'] / total_count) * 100
+
+    # calculate average percentage per model and temperature
+    avg_percentage = df.groupby(['model_name', 'temperature'])['percentage'].mean()
+    print("Average percentage per model and temperature:")
+    print(avg_percentage.round(2))
+
+    # calculate average count per model and temperature
+    avg_count = df.groupby(['model_name', 'temperature'])['count'].mean()
+    print("Average count per model and temperature:")
+    print(avg_count.round(2))
 
     # color
     palette = sns.color_palette('rocket', len(df['model_name'].unique()))
