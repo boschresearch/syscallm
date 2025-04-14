@@ -111,11 +111,11 @@ def get_stuck_in_loop_by_error(invalid, json_dir):
 
 if __name__ == "__main__":
     # directory to all json data
-    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data/temperature"))
+    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data/json_for_coverage"))
 
     # directories json data for each temperature
     temperature = ["0.3", "0.5", "0.7"]
-    temperature_dirs = [os.path.join(data_dir, f"json_{temp}") for temp in temperature]
+    temperature_dirs = [os.path.join(data_dir, f"temperature_{temp}") for temp in temperature]
 
     df = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
 
