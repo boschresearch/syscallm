@@ -13,7 +13,7 @@ def set_id(json_content, str):
 def get_random_number(mode):
     """Generate a random unsigned integer."""
     if mode == "success":
-        return random.randint(0, 4294963200)
+        return random.randint(0, 18446744073709551615)
     elif mode == "error_code":
         return random.randint(1, 4095)
 
