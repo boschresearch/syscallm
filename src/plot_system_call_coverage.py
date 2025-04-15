@@ -1,10 +1,8 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 import seaborn as sns
-from utils import is_json, get_total_count
+from utils import is_json
 import config
 
 plt.rcParams["font.family"] = "Times New Roman"
