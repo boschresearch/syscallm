@@ -19,7 +19,7 @@ def main():
 
     plt.xlabel('Count', fontsize=14)
     plt.ylabel(None)
-    plt.xticks(rotation=45, fontsize=12)
+    plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.tight_layout()
