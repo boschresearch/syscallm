@@ -207,6 +207,7 @@ def plot_failure_by_syscall(data1, data2):
         axs[i].set_title(t, fontsize=15)
         axs[i].set_ylabel('System Call' if i == 0 else None, fontsize=15)
         axs[i].grid(linestyle='--', alpha=0.7)
+        axs[i].invert_yaxis()
     fig.supxlabel('Average Count', fontsize=15)
     plt.tight_layout(rect=[0, 0, 1, 0.93])
     plt.show()
