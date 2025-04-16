@@ -18,7 +18,7 @@ palette = {
 }
 
 # runs = config.runs
-runs = 1
+runs = 2
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -155,7 +155,6 @@ def plot_outcome_per_syscall(data1, data2):
     frame.set_facecolor('white')
     frame.set_edgecolor('lightgrey')
     frame.set_linewidth(0.7)
-
     plt.tight_layout()
     plt.show()
 
@@ -336,7 +335,11 @@ def plot_test_case_distribution(data):
     pivot_df.fillna(0, inplace=True)
     pivot_df = pivot_df.iloc[::-1]
 
-    ax = pivot_df.plot(kind='barh', figsize=(10, 6))
+    ax = pivot_df.plot(
+        kind='barh',
+        figsize=(10, 6),
+        colormap='coolwarm'
+    )
 
     for label in ax.get_yticklabels():
         if label.get_text() in ['pread64', 'rseq']:
