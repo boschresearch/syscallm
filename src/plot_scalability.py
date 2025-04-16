@@ -26,10 +26,10 @@ def find_unavailable_syscalls(base_syscalls, missing_file):
 
 def main():
     # file paths for each Ubuntu version
-    kernel_5_4_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_5.4.0.txt"
-    kernel_5_15_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_5.15.0.txt"
-    kernel_6_8_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_6.8.0.txt"
-    kernel_6_11_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_6.11.0.txt"
+    kernel_5_4_0 = "/home/jom8be/workspaces/data/syscall/syscalls_5.4.0.txt"
+    kernel_5_15_0 = "/home/jom8be/workspaces/data/syscall/syscalls_5.15.0.txt"
+    kernel_6_8_0 = "/home/jom8be/workspaces/data/syscall/syscalls_6.8.0.txt"
+    kernel_6_11_0 = "/home/jom8be/workspaces/data/syscall/syscalls_6.11.0.txt"
 
     # compare syscalls between versions
     versions = [("5.4.0", kernel_5_4_0), ("5.15.0", kernel_5_15_0), ("6.8.0", kernel_6_8_0), ("6.11.0", kernel_6_11_0)]
