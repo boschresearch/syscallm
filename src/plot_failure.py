@@ -140,7 +140,7 @@ def plot_outcome_per_syscall(data1, data2):
         aspect=0.7
     )
 
-    g.set_axis_labels("Failure Rate (%)", "System Call", fontsize=14)
+    g.set_axis_labels("Failure Rate (%)", None)
 
     # Style each axis
     for ax in g.axes.flat:
@@ -159,7 +159,7 @@ def plot_outcome_per_syscall(data1, data2):
     plt.show()
 
 
-def plot_failure_by_syscall(data1, data2):
+def plot_failure_per_syscall(data1, data2):
     df1 = data1.groupby('syscall')[['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']].sum().div(runs).reset_index()
     df2 = data2.groupby('syscall')[['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']].sum().div(runs).reset_index()
 
@@ -205,7 +205,7 @@ def plot_failure_by_syscall(data1, data2):
         if i == len(types) - 1:
             axs[i].legend(title=None, loc='upper right')
         axs[i].set_title(t, fontsize=15)
-        axs[i].set_ylabel('System Call' if i == 0 else None, fontsize=15)
+        axs[i].set_ylabel(None)
         axs[i].grid(linestyle='--', alpha=0.7)
         axs[i].invert_yaxis()
     fig.supxlabel('Average Count', fontsize=15)
@@ -243,7 +243,7 @@ def plot_silent_data_corruption_by_syscall(llm, random):
 
     plt.xlabel(None)
     plt.ylabel('Count', fontsize=14)
-    plt.xticks(rotation=45, fontsize=12)
+    plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.legend(fontsize=12)
@@ -351,7 +351,7 @@ def plot_test_case_distribution(data):
 
     plt.xlabel('Count', fontsize=14)
     plt.ylabel(None)
-    plt.xticks(rotation=45, fontsize=12)
+    plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
     plt.legend(title='Run', fontsize=12)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
@@ -405,7 +405,7 @@ def main():
     plot_outcome_per_syscall(all_llm_data, all_random_data)
 
     # plot failure types by syscall
-    plot_failure_by_syscall(all_llm_data, all_random_data)
+    plot_failure_per_syscall(all_llm_data, all_random_data)
 
     # plot silent data corruption by syscall
     plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
