@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import config
+import json
 from app_syscalls import get_app_syscalls
 
 plt.rcParams["font.family"] = "Times New Roman"
@@ -18,7 +19,7 @@ palette = {
 }
 
 # runs = config.runs
-runs = 2
+runs = 4
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -142,8 +143,9 @@ def plot_outcome_per_syscall(data1, data2):
 
     g.set_axis_labels("Failure Rate (%)", None)
 
-    # Style each axis
     for ax in g.axes.flat:
+        ax.set_ylabel("")
+        ax.yaxis.label.set_visible(False)
         ax.grid(linestyle='--', alpha=0.5)
 
     # Legend styling
@@ -208,7 +210,7 @@ def plot_failure_per_syscall(data1, data2):
         axs[i].set_ylabel(None)
         axs[i].grid(linestyle='--', alpha=0.7)
         axs[i].invert_yaxis()
-    fig.supxlabel('Average Count', fontsize=15)
+    fig.supxlabel('Count', fontsize=15)
     plt.tight_layout(rect=[0, 0, 1, 0.93])
     plt.show()
 
@@ -218,19 +220,15 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     random_counts = random[random['silent_data_corruption'] == True]['syscall'].value_counts()
 
     df = pd.DataFrame({
-        'syscall': llm_counts.index.append(random_counts.index).unique(),
-        'SyscaLLM (GPT-4o)': llm_counts,
-        'Random': random_counts
+        'syscall': pd.concat([llm_counts, random_counts]).index,
+        'count': pd.concat([llm_counts, random_counts]).values,
+        'type': ['SyscaLLM (GPT-4o)'] * len(llm_counts) + ['Random'] * len(random_counts)
     })
-
-    df = df.melt(
-        id_vars='syscall',
-        value_vars=['SyscaLLM (GPT-4o)', 'Random'],
-        var_name='type',
-        value_name='count'
-    )
     
     df['count'] = df['count'].fillna(0).astype(int)
+    df['count'] = df['count'].div(runs).round(2)
+
+    df['syscall'] = pd.Categorical(df['syscall'], categories=sorted(df['syscall'].unique()), ordered=True)
 
     plt.figure(figsize=(6, 4))
 
@@ -298,7 +296,7 @@ def plot_outcome(llm, random):
         linewidth=2
     )
 
-    plt.ylabel('Average Rate (%)', fontsize=14)
+    plt.ylabel('Percentage (%)', fontsize=14)
     plt.xlabel('Outcome', fontsize=14)
     plt.xticks(rotation=15, fontsize=12)
     plt.yticks(fontsize=12)
@@ -359,6 +357,88 @@ def plot_test_case_distribution(data):
     plt.show()
 
 
+def plot_silent_data_corruption_error_instances(data1, data2):
+    # config files for SyscaLLM (GPT-4o) and Random
+    llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
+    random_config = "/home/jom8be/workspaces/data/config_random/gpt-4o"
+
+    # filter out only sdc
+    df1 = data1[data1['silent_data_corruption'] == True].copy()
+    df2 = data2[data2['silent_data_corruption'] == True].copy()
+
+    df1['retval'] = None
+    df2['retval'] = None
+
+    # iterate over rows
+    for index, row in df1.iterrows():
+        # id
+        syscall = row['id']
+        # run number
+        run = row['run']
+
+        # config file path that resulted in sdc
+        config_path = f"{llm_config}/run{run}/{syscall}.json"
+
+        with open(config_path, 'r') as file:
+            # load JSON data
+            config_data = json.load(file)
+
+            # strace parameter for tampering
+            strace_param = config_data['syslog_monitor_config']['faults'][0]
+
+            # extract return value
+            retval_start = strace_param.find("retval=") + len("retval=")
+            retval_end = strace_param.find(":", retval_start)
+            retval = strace_param[retval_start:retval_end]
+
+            # add retval to the dataframe
+            df1.loc[index, 'retval'] = int(retval)
+            
+    df1['retval'] = df1['retval'].astype(int)
+
+    # iterate over rows
+    for index, row in df2.iterrows():
+        # id
+        syscall = row['id']
+        # run number
+        run = row['run']
+
+        # config file path that resulted in sdc
+        config_path = f"{random_config}/run{run}/{syscall}.json"
+
+        with open(config_path, 'r') as file:
+            # load JSON data
+            config_data = json.load(file)
+
+            # strace parameter for tampering
+            strace_param = config_data['syslog_monitor_config']['faults'][0]
+
+            # extract return value
+            retval_start = strace_param.find("retval=") + len("retval=")
+            retval_end = strace_param.find(":", retval_start)
+            retval = strace_param[retval_start:retval_end]
+
+            # add retval to the dataframe
+            df2.at[index, 'retval'] = int(retval)
+
+    sns.relplot(
+        data=df1,
+        x='syscall',
+        y='retval',
+        hue='syscall',
+        palette='viridis',
+        legend=False
+    )
+    plt.xlabel('Syscall', fontsize=14)
+    plt.ylabel('Return Value', fontsize=14)
+    plt.xticks(rotation=45, fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.yscale('log')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
+
+
 def main():    
     # initialize accumulators as empty Series
     all_llm_data = pd.DataFrame() 
@@ -409,6 +489,8 @@ def main():
 
     # plot silent data corruption by syscall
     plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+
+    plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()
