@@ -18,8 +18,7 @@ palette = {
     'No Changes': colors[4]
 }
 
-# runs = config.runs
-runs = 4
+runs = config.runs
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -240,9 +239,9 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     )
 
     plt.xlabel(None)
-    plt.ylabel('Count', fontsize=14)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    plt.ylabel('Count', fontsize=18)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.legend(fontsize=12)
     plt.tight_layout()
@@ -308,6 +307,7 @@ def plot_outcome(llm, random):
 
 
 def plot_test_case_distribution(data):
+    data = data.copy()
     data.drop(columns=['id'], inplace=True)
 
     df = data.groupby(['run', 'syscall']).sum().reset_index()
@@ -420,6 +420,10 @@ def plot_silent_data_corruption_error_instances(data1, data2):
 
             # add retval to the dataframe
             df2.at[index, 'retval'] = int(retval)
+
+    min_retval = df1['retval'].min()
+    max_retval = df1['retval'].max()
+    print(f"Minimum retval: {min_retval}, Maximum retval: {max_retval}")
 
     sns.relplot(
         data=df1,
