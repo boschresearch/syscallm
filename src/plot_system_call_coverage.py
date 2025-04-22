@@ -1,10 +1,8 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 import seaborn as sns
-from utils import is_json, get_total_count
+from utils import is_json
 import config
 
 plt.rcParams["font.family"] = "Times New Roman"
@@ -111,11 +109,11 @@ def get_stuck_in_loop_by_error(invalid, json_dir):
 
 if __name__ == "__main__":
     # directory to all json data
-    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data/temperature"))
+    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data/json_for_coverage"))
 
     # directories json data for each temperature
     temperature = ["0.3", "0.5", "0.7"]
-    temperature_dirs = [os.path.join(data_dir, f"json_{temp}") for temp in temperature]
+    temperature_dirs = [os.path.join(data_dir, f"temperature_{temp}") for temp in temperature]
 
     df = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
 
@@ -137,8 +135,8 @@ if __name__ == "__main__":
     plt.figure(figsize=(6, 4.5))
     
     # total number of syscalls
-    total_count = 328
-    plt.axhline(y=total_count, color='black', linestyle='--', label='Total Count')
+    total_count = 335
+    plt.axhline(y=(328/335)*100, color='black', linestyle='--', label='Maximum Coverage')
 
     # add percentage
     df['percentage'] = (df['count'] / total_count) * 100

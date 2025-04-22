@@ -26,18 +26,18 @@ def find_unavailable_syscalls(base_syscalls, missing_file):
 
 def main():
     # file paths for each Ubuntu version
-    kernel_5_4_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_5.4.0.txt"
-    kernel_5_15_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_5.15.0.txt"
-    kernel_6_8_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_6.8.0.txt"
-    kernel_6_11_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/syscalls_6.11.0.txt"
+    kernel_5_4_0 = "/home/jom8be/workspaces/data/syscall/syscalls_5.4.0.txt"
+    kernel_5_15_0 = "/home/jom8be/workspaces/data/syscall/syscalls_5.15.0.txt"
+    kernel_6_8_0 = "/home/jom8be/workspaces/data/syscall/syscalls_6.8.0.txt"
+    kernel_6_11_0 = "/home/jom8be/workspaces/data/syscall/syscalls_6.11.0.txt"
 
     # compare syscalls between versions
     versions = [("5.4.0", kernel_5_4_0), ("5.15.0", kernel_5_15_0), ("6.8.0", kernel_6_8_0), ("6.11.0", kernel_6_11_0)]
 
     # file paths for missing syscalls
-    missing_5_15_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/missing_syscalls_5.15.0.txt"
-    missing_6_8_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/missing_syscalls_6.8.0.txt"
-    missing_6_11_0 = "/home/jom8be/workspaces/llm-safety-fuzzing/data/syscall/missing_syscalls_6.11.0.txt"
+    missing_5_15_0 = "/home/jom8be/workspaces/data/syscall/missing_syscalls_5.15.0.txt"
+    missing_6_8_0 = "/home/jom8be/workspaces/data/syscall/missing_syscalls_6.8.0.txt"
+    missing_6_11_0 = "/home/jom8be/workspaces/data/syscall/missing_syscalls_6.11.0.txt"
 
     missing = [
         missing_5_15_0,
@@ -52,8 +52,8 @@ def main():
         added, deleted = compare_syscalls(base_file, compare_file)
 
         print(f"Changes from kernel {base_version} to {compare_version}:")
-        print(f"  Added syscalls: {sorted(added)}")
-        print(f"  Deleted syscalls: {sorted(deleted)}")
+        print(f"  {len(added)} Added syscalls: {sorted(added)}")
+        print(f"  {len(deleted)} Deleted syscalls: {sorted(deleted)}")
 
         # compare syscalls with missing
         added_and_no_man = find_unavailable_syscalls(added, missing[i])

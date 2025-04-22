@@ -17,7 +17,7 @@ if __name__ == "__main__":
     print(f"Running in mode: {mode}")
     print(f"Generating random test cases X{factor} for each model and run.")
 
-    data_dir_path = os.path.join(os.getcwd(), "data")
+    data_dir_path = os.path.abspath(os.path.join(os.getcwd(), "..", "data"))
     json_dir_path = os.path.join(data_dir_path, "json")
     strace_dir_path = os.path.join(data_dir_path, "strace")
     config_dir_path = os.path.join(data_dir_path, "config")
