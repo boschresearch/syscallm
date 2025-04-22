@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import seaborn as sns
 import config
 import json
@@ -137,10 +138,11 @@ def plot_outcome_per_syscall(data1, data2):
         linestyles=['-', '--'],
         linewidth=1.5,
         height=6,
-        aspect=0.7
+        aspect=0.7,
+        palette={'SyscaLLM (GPT-4o)': '#6A5ACD', 'Random': '#FF8C00'}
     )
 
-    g.set_axis_labels("Failure Rate (%)", None)
+    g.set_axis_labels("Failure Rate (%)", None, fontsize=16)
 
     for ax in g.axes.flat:
         ax.set_ylabel("")
@@ -235,7 +237,8 @@ def plot_silent_data_corruption_by_syscall(llm, random):
         data=df,
         x='syscall',
         y='count',
-        hue='type'
+        hue='type',
+        palette={'SyscaLLM (GPT-4o)': '#6A5ACD', 'Random': '#FF8C00'}
     )
 
     plt.xlabel(None)
@@ -292,7 +295,8 @@ def plot_outcome(llm, random):
         hue='type',
         style='type',
         markers=True,
-        linewidth=2
+        linewidth=2,
+        palette={'SyscaLLM (GPT-4o)': '#6A5ACD', 'Random': '#FF8C00'}
     )
 
     plt.ylabel('Percentage (%)', fontsize=14)
@@ -308,7 +312,7 @@ def plot_outcome(llm, random):
 
 def plot_test_case_distribution(data):
     data = data.copy()
-    data.drop(columns=['id'], inplace=True)
+    # data.drop(columns=['id'], inplace=True)
 
     df = data.groupby(['run', 'syscall']).sum().reset_index()
 
@@ -321,8 +325,7 @@ def plot_test_case_distribution(data):
     for index, row in df.iterrows():
         syscall = row['syscall']
         if syscall in syscall_dict:
-            divisor = syscall_dict[syscall]
-            df.at[index, 'total'] = row['total'] / divisor
+            df.at[index, 'total'] = row['total']
 
     for syscall in syscall_dict.keys():
         if syscall not in df['syscall'].values:
