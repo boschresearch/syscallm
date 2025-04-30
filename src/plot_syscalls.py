@@ -17,10 +17,10 @@ def main():
 
     sns.barplot(df, x='Count', y='Syscall', hue='Syscall', palette='viridis')
 
-    plt.xlabel('Count', fontsize=14)
+    plt.xlabel('Count', fontsize=17)
     plt.ylabel(None)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=13)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
