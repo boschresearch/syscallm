@@ -339,8 +339,10 @@ def plot_test_case_distribution(data):
 
     ax = pivot_df.plot(
         kind='barh',
-        figsize=(10, 6),
-        colormap='coolwarm'
+        figsize=(6, 8),
+        color=['#6A5ACD', '#FF8C00', '#2E8B57', '#DC143C', '#3471eb'],
+        logx=True,
+        width=0.8
     )
 
     for label in ax.get_yticklabels():
@@ -350,12 +352,12 @@ def plot_test_case_distribution(data):
             label.set_alpha(0.7)
             label.set_text(f"{label.get_text()} (X)")
 
-    plt.xlabel('Count', fontsize=17)
+    plt.xlabel('Count (log scale)', fontsize=15)
     plt.ylabel(None)
-    plt.xticks(fontsize=16)
+    plt.xticks(fontsize=13)
     plt.yticks(fontsize=13)
-    plt.legend(title='Run', fontsize=16)
-    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    plt.legend(title='Run', fontsize=15, loc='upper right', bbox_to_anchor=(1, 0.7))
+    plt.grid(linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
 
@@ -486,18 +488,18 @@ def main():
     plot_test_case_distribution(all_llm_data)
 
     # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    plot_outcome(all_llm_data, all_random_data)
+    # plot_outcome(all_llm_data, all_random_data)
     
-    # plot normalized failure types by syscall
-    plot_outcome_per_syscall(all_llm_data, all_random_data)
+    # # plot normalized failure types by syscall
+    # plot_outcome_per_syscall(all_llm_data, all_random_data)
 
-    # plot failure types by syscall
-    plot_failure_per_syscall(all_llm_data, all_random_data)
+    # # plot failure types by syscall
+    # plot_failure_per_syscall(all_llm_data, all_random_data)
 
-    # plot silent data corruption by syscall
-    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+    # # plot silent data corruption by syscall
+    # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
-    plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
+    # plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()
