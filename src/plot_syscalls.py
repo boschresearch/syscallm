@@ -15,12 +15,21 @@ def main():
 
     plt.figure(figsize=(6, 6.5))
 
-    sns.barplot(df, x='Count', y='Syscall', hue='Syscall', palette='viridis')
+    ax = sns.barplot(df, x='Count', y='Syscall', hue='Syscall', palette='viridis')
 
-    plt.xlabel('Count', fontsize=14)
+    for _, bar in enumerate(ax.patches):
+        ax.text(
+            bar.get_width() + 0.5,  # Position slightly to the right of the bar
+            bar.get_y() + bar.get_height() / 2,  # Center vertically
+            f"{int(bar.get_width())}",  # Display the count
+            va='center', fontsize=13
+        )
+
+    plt.xlabel('Count', fontsize=17)
     plt.ylabel(None)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=13)
+    plt.xlim(0, df['Count'].max() + 15)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
