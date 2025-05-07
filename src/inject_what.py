@@ -20,8 +20,7 @@ def json_to_strace(data, mode):
     strace_commands = []
     if mode == "success":
         for test_value in test_values:
-            if test_value <= 4294963200:
-                strace_commands.append(f"inject={syscall_name}:retval={test_value}")
+            strace_commands.append(f"inject={syscall_name}:retval={test_value}")
     elif mode == "error_code":
         for test_value in test_values:
             strace_commands.append(f"inject={syscall_name}:error_code={test_value}")
