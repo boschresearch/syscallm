@@ -424,11 +424,7 @@ def plot_silent_data_corruption_error_instances(data1, data2):
             retval = strace_param[retval_start:retval_end]
 
             # add retval to the dataframe
-            df2.at[index, 'retval'] = int(retval)
-
-    min_retval = df1['retval'].min()
-    max_retval = df1['retval'].max()
-    print(f"Minimum retval: {min_retval}, Maximum retval: {max_retval}")
+            df2.at[index, 'retval'] = retval
 
     sns.relplot(
         data=df1,
