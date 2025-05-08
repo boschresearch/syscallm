@@ -346,7 +346,7 @@ def plot_test_case_distribution(data):
     )
 
     for label in ax.get_yticklabels():
-        if label.get_text() in ['pread64', 'rseq']:
+        if label.get_text() in ['rseq']:
             label.set_fontstyle('italic')
             label.set_color('red')
             label.set_alpha(0.7)
