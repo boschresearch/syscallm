@@ -488,18 +488,18 @@ def main():
     plot_test_case_distribution(all_llm_data)
 
     # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    # plot_outcome(all_llm_data, all_random_data)
+    plot_outcome(all_llm_data, all_random_data)
     
-    # # plot normalized failure types by syscall
-    # plot_outcome_per_syscall(all_llm_data, all_random_data)
+    # plot normalized failure types by syscall
+    plot_outcome_per_syscall(all_llm_data, all_random_data)
 
-    # # plot failure types by syscall
-    # plot_failure_per_syscall(all_llm_data, all_random_data)
+    # plot failure types by syscall
+    plot_failure_per_syscall(all_llm_data, all_random_data)
 
-    # # plot silent data corruption by syscall
-    # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+    # plot silent data corruption by syscall
+    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
-    # plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
+    plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()
