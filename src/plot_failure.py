@@ -186,31 +186,31 @@ def plot_failure_per_syscall(data1, data2):
         value_name='count'
     )
 
-    pivot_df = df.pivot_table(
-        index=['syscall', 'type'],
-        columns='outcome_type',
-        values='count',
-        fill_value=0
-    ).reset_index()
+    outcome_types = list(outcome_labels.values())
+    fig, axs = plt.subplots(1, len(outcome_types), figsize=(20, 6), sharey=True)
 
-    types = pivot_df['type'].unique()
-    fig, axs = plt.subplots(1, len(types), figsize=(14, 6), sharex=True, sharey=True)
+    for i, outcome in enumerate(outcome_types):
+        sub_df = df[df['outcome_type'] == outcome]
+        pivot_df = sub_df.pivot_table(
+            index='syscall',
+            columns='type',
+            values='count',
+            fill_value=0
+        ).reset_index()
 
-    for i, t in enumerate(types):
-        sub_df = pivot_df[pivot_df['type'] == t].set_index('syscall').drop(columns='type')
-        sub_df.plot(
+        pivot_df.set_index('syscall').plot(
             kind='barh',
-            stacked=True,
             ax=axs[i],
-            color=[palette[col] for col in sub_df.columns],
-            legend=False
+            color=['#FF8C00', '#6A5ACD'],
+            legend=(i == len(outcome_types) - 1)
         )
-        if i == len(types) - 1:
-            axs[i].legend(title=None, loc='upper right')
-        axs[i].set_title(t, fontsize=15)
+        axs[i].set_title(outcome, fontsize=15)
         axs[i].set_ylabel(None)
         axs[i].grid(linestyle='--', alpha=0.7)
         axs[i].invert_yaxis()
+        if i == len(outcome_types) - 1:
+            axs[i].legend(title=None, loc='upper right')
+
     fig.supxlabel('Count', fontsize=15)
     plt.tight_layout(rect=[0, 0, 1, 0.93])
     plt.show()
