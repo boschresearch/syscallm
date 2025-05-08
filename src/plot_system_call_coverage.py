@@ -136,7 +136,7 @@ if __name__ == "__main__":
     
     # total number of syscalls
     total_count = 335
-    plt.axhline(y=(328/335)*100, color='black', linestyle='--', label='Maximum Coverage')
+    plt.axhline(y=(329/335)*100, color='black', linestyle='--', label='Maximum Coverage')
 
     # add percentage
     df['percentage'] = (df['count'] / total_count) * 100
