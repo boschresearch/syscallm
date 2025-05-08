@@ -19,7 +19,8 @@ palette = {
     'No Changes': colors[4]
 }
 
-runs = config.runs
+# runs = config.runs
+runs = 3
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -187,7 +188,7 @@ def plot_failure_per_syscall(data1, data2):
     )
 
     outcome_types = list(outcome_labels.values())
-    fig, axs = plt.subplots(1, len(outcome_types), figsize=(20, 6), sharey=True)
+    fig, axs = plt.subplots(1, len(outcome_types), figsize=(10, 6), sharey=True)
 
     for i, outcome in enumerate(outcome_types):
         sub_df = df[df['outcome_type'] == outcome]
@@ -223,7 +224,7 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     df = pd.DataFrame({
         'syscall': pd.concat([llm_counts, random_counts]).index,
         'count': pd.concat([llm_counts, random_counts]).values,
-        'type': ['SyscaLLM (GPT-4o)'] * len(llm_counts) + ['Random'] * len(random_counts)
+        'type': ['Random'] * len(random_counts) + ['SyscaLLM (GPT-4o)'] * len(llm_counts)
     })
     
     df['count'] = df['count'].fillna(0).astype(int)
@@ -340,7 +341,7 @@ def plot_test_case_distribution(data):
     ax = pivot_df.plot(
         kind='barh',
         figsize=(6, 8),
-        color=['#6A5ACD', '#FF8C00', '#2E8B57', '#DC143C', '#3471eb'],
+        colormap='viridis',
         logx=True,
         width=0.8
     )
@@ -493,9 +494,9 @@ def main():
     plot_failure_per_syscall(all_llm_data, all_random_data)
 
     # plot silent data corruption by syscall
-    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+    # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
-    plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
+    # plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()
