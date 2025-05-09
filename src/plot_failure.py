@@ -20,7 +20,7 @@ palette = {
 }
 
 # runs = config.runs
-runs = 3
+runs=4
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -203,7 +203,8 @@ def plot_failure_per_syscall(data1, data2):
             kind='barh',
             ax=axs[i],
             color=['#FF8C00', '#6A5ACD'],
-            legend=(i == len(outcome_types) - 1)
+            legend=(i == len(outcome_types) - 1),
+            logx=(outcome in ['App Crash', 'App Hang', 'Error Exit'])
         )
         axs[i].set_title(outcome, fontsize=15)
         axs[i].set_ylabel(None)
@@ -363,14 +364,14 @@ def plot_test_case_distribution(data):
     plt.show()
 
 
-def plot_silent_data_corruption_error_instances(data1, data2):
+def plot_error_instances(data1, data2):
     # config files for SyscaLLM (GPT-4o) and Random
     llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
     random_config = "/home/jom8be/workspaces/data/config_random/gpt-4o"
 
     # filter out only sdc
-    df1 = data1[data1['silent_data_corruption'] == True].copy()
-    df2 = data2[data2['silent_data_corruption'] == True].copy()
+    df1 = data1[data1['error_exit'] == True].copy()
+    df2 = data2[data2['error_exit'] == True].copy()
 
     df1['retval'] = None
     df2['retval'] = None
@@ -399,8 +400,6 @@ def plot_silent_data_corruption_error_instances(data1, data2):
 
             # add retval to the dataframe
             df1.loc[index, 'retval'] = int(retval)
-            
-    df1['retval'] = df1['retval'].astype(int)
 
     # iterate over rows
     for index, row in df2.iterrows():
@@ -425,22 +424,48 @@ def plot_silent_data_corruption_error_instances(data1, data2):
             retval = strace_param[retval_start:retval_end]
 
             # add retval to the dataframe
-            df2.at[index, 'retval'] = retval
+            df2.at[index, 'retval'] = int(retval)
 
-    sns.relplot(
-        data=df1,
-        x='syscall',
-        y='retval',
-        hue='syscall',
-        palette='viridis',
-        legend=False
-    )
-    plt.xlabel('Syscall', fontsize=14)
-    plt.ylabel('Return Value', fontsize=14)
-    plt.xticks(rotation=45, fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.yscale('log')
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    # get unique syscalls from both df1 and df2
+    unique_syscalls = set(df1['syscall']).union(set(df2['syscall']))
+
+    # ensure all unique syscalls are present in df1
+    for syscall in unique_syscalls:
+        if syscall not in df1['syscall'].values:
+            df1 = pd.concat([df1, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
+
+    # ensure all unique syscalls are present in df2
+    for syscall in unique_syscalls:
+        if syscall not in df2['syscall'].values:
+            print(syscall)
+            df2 = pd.concat([df2, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
+
+    # Sort syscalls alphabetically for consistent tick order
+    sorted_syscalls = sorted(unique_syscalls)
+    df1['syscall'] = pd.Categorical(df1['syscall'], categories=sorted_syscalls, ordered=True)
+    df2['syscall'] = pd.Categorical(df2['syscall'], categories=sorted_syscalls, ordered=True)
+
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
+
+    for ax, df, title in zip(axs, [df1, df2], ['SyscaLLM (GPT-4o)', 'Random']):
+        sns.scatterplot(
+            data=df,
+            x='retval',
+            y='syscall',
+            hue='syscall',
+            palette='viridis',
+            legend=False,
+            ax=ax
+        )
+        ax.set_title(title, fontsize=16)
+        ax.set_xlabel(None)
+        ax.set_ylabel(None)
+        ax.tick_params(axis='x', labelsize=14)
+        ax.tick_params(axis='y', labelsize=14)
+        ax.set_xscale('log')
+        ax.grid(linestyle='--', alpha=0.7)
+
+    fig.supxlabel('Return Value (log scale)', fontsize=16)
     plt.tight_layout()
     plt.show()
 
@@ -485,7 +510,7 @@ def main():
     plot_test_case_distribution(all_llm_data)
 
     # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    plot_outcome(all_llm_data, all_random_data)
+    # plot_outcome(all_llm_data, all_random_data)
     
     # plot normalized failure types by syscall
     plot_outcome_per_syscall(all_llm_data, all_random_data)
@@ -496,7 +521,7 @@ def main():
     # plot silent data corruption by syscall
     # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
-    # plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
+    plot_error_instances(all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()
