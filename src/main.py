@@ -9,13 +9,10 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process JSON files to generate the faultload.")
     parser.add_argument("--mode", type=str, required=True, help="Fault injection mode (e.g., 'error_code', 'success')")
-    parser.add_argument("--factor", type=int, default=1, help="Factor to generate random test cases (default: 1).")
     args = parser.parse_args()
 
     mode = args.mode
-    factor = args.factor
     print(f"Running in mode: {mode}")
-    print(f"Generating random test cases X{factor} for each model and run.")
 
     data_dir_path = os.path.abspath(os.path.join(os.getcwd(), "..", "data"))
     json_dir_path = os.path.join(data_dir_path, "json")
@@ -38,6 +35,6 @@ if __name__ == "__main__":
     inject_when.process_all_models(strace_dir_path)
     strace_to_config.process_all_models(strace_dir_path)
 
-    random_strace.process_all_models(config_dir_path, mode, factor)
+    random_strace.process_all_models(config_dir_path, mode)
 
     os.system(f"rm -r {strace_dir_path}")

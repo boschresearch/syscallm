@@ -132,11 +132,10 @@ if __name__ == "__main__":
                     print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)}, Invalid: {invalid}")
 
     # figure size
-    plt.figure(figsize=(6, 4.5))
+    plt.figure(figsize=(5, 4))
     
     # total number of syscalls
     total_count = 335
-    plt.axhline(y=(328/335)*100, color='black', linestyle='--', label='Maximum Coverage')
 
     # add percentage
     df['percentage'] = (df['count'] / total_count) * 100
@@ -162,17 +161,17 @@ if __name__ == "__main__":
         hue='model_name',
         style='model_name',
         markers=True,
-        markersize=10,
+        markersize=12,
         palette=palette
     )
 
     # plot parameters
-    plt.xlabel('Temperature', fontsize=18)
-    plt.ylabel('Percentage (%)', fontsize=18)
+    plt.xlabel('Temperature', fontsize=16)
+    plt.ylabel('Percentage (%)', fontsize=16)
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
     plt.ylim(0, 100)
-    plt.legend(fontsize=12, loc='upper right', bbox_to_anchor=(1, 0.45))
+    plt.legend(fontsize=13, loc='upper right', bbox_to_anchor=(1, 0.45))
     plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 

@@ -84,6 +84,8 @@ def print_statistics(llm, random):
     print(llm_counts)
     print("Percentages:")
     print(llm_percentages)
+    print("Average Counts:")
+    print(llm_counts.mean().round(2).to_frame().T)
     print("Average Percentages:")
     print(avg_llm_percentages.to_frame().T)
     print(f"---------------------------------------------------------------")
@@ -92,6 +94,8 @@ def print_statistics(llm, random):
     print(random_counts)
     print("Percentages:")
     print(random_percentages)
+    print("Average Counts:")
+    print(random_counts.mean().round(2).to_frame().T)
     print("Average Percentages:")
     print(avg_random_percentages.to_frame().T)
     print(f"---------------------------------------------------------------")
@@ -186,32 +190,33 @@ def plot_failure_per_syscall(data1, data2):
         value_name='count'
     )
 
-    pivot_df = df.pivot_table(
-        index=['syscall', 'type'],
-        columns='outcome_type',
-        values='count',
-        fill_value=0
-    ).reset_index()
+    outcome_types = list(outcome_labels.values())
+    fig, axs = plt.subplots(1, len(outcome_types), figsize=(10, 6), sharey=True)
 
-    types = pivot_df['type'].unique()
-    fig, axs = plt.subplots(1, len(types), figsize=(14, 6), sharex=True, sharey=True)
+    for i, outcome in enumerate(outcome_types):
+        sub_df = df[df['outcome_type'] == outcome]
+        pivot_df = sub_df.pivot_table(
+            index='syscall',
+            columns='type',
+            values='count',
+            fill_value=0
+        ).reset_index()
 
-    for i, t in enumerate(types):
-        sub_df = pivot_df[pivot_df['type'] == t].set_index('syscall').drop(columns='type')
-        sub_df.plot(
+        pivot_df.set_index('syscall').plot(
             kind='barh',
-            stacked=True,
             ax=axs[i],
-            color=[palette[col] for col in sub_df.columns],
-            legend=False
+            color=['#FF8C00', '#6A5ACD'],
+            legend=(i == len(outcome_types) - 1),
+            logx=(outcome in ['App Crash', 'App Hang', 'Error Exit'])
         )
-        if i == len(types) - 1:
-            axs[i].legend(title=None, loc='upper right')
-        axs[i].set_title(t, fontsize=15)
+        axs[i].set_title(outcome, fontsize=14)
         axs[i].set_ylabel(None)
         axs[i].grid(linestyle='--', alpha=0.7)
         axs[i].invert_yaxis()
-    fig.supxlabel('Count', fontsize=15)
+        if i == len(outcome_types) - 1:
+            axs[i].legend(title=None, loc='upper right')
+
+    fig.supxlabel('Count', fontsize=14)
     plt.tight_layout(rect=[0, 0, 1, 0.93])
     plt.show()
 
@@ -223,7 +228,7 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     df = pd.DataFrame({
         'syscall': pd.concat([llm_counts, random_counts]).index,
         'count': pd.concat([llm_counts, random_counts]).values,
-        'type': ['SyscaLLM (GPT-4o)'] * len(llm_counts) + ['Random'] * len(random_counts)
+        'type': ['Random'] * len(random_counts) + ['SyscaLLM (GPT-4o)'] * len(llm_counts)
     })
     
     df['count'] = df['count'].fillna(0).astype(int)
@@ -340,13 +345,13 @@ def plot_test_case_distribution(data):
     ax = pivot_df.plot(
         kind='barh',
         figsize=(6, 8),
-        color=['#6A5ACD', '#FF8C00', '#2E8B57', '#DC143C', '#3471eb'],
+        color=['#d63b27', '#d6cd27', '#341a9e', '#27d641', '#a02ca0'],
         logx=True,
         width=0.8
     )
 
     for label in ax.get_yticklabels():
-        if label.get_text() in ['pread64', 'rseq']:
+        if label.get_text() in ['rseq']:
             label.set_fontstyle('italic')
             label.set_color('red')
             label.set_alpha(0.7)
@@ -356,20 +361,20 @@ def plot_test_case_distribution(data):
     plt.ylabel(None)
     plt.xticks(fontsize=13)
     plt.yticks(fontsize=13)
-    plt.legend(title='Run', fontsize=15, loc='upper right', bbox_to_anchor=(1, 0.7))
+    plt.legend(title='Run', fontsize=15, loc='upper right')
     plt.grid(linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
 
 
-def plot_silent_data_corruption_error_instances(data1, data2):
+def plot_error_instances(data1, data2):
     # config files for SyscaLLM (GPT-4o) and Random
     llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
     random_config = "/home/jom8be/workspaces/data/config_random/gpt-4o"
 
     # filter out only sdc
-    df1 = data1[data1['silent_data_corruption'] == True].copy()
-    df2 = data2[data2['silent_data_corruption'] == True].copy()
+    df1 = data1[data1['error_exit'] == True].copy()
+    df2 = data2[data2['error_exit'] == True].copy()
 
     df1['retval'] = None
     df2['retval'] = None
@@ -398,8 +403,6 @@ def plot_silent_data_corruption_error_instances(data1, data2):
 
             # add retval to the dataframe
             df1.loc[index, 'retval'] = int(retval)
-            
-    df1['retval'] = df1['retval'].astype(int)
 
     # iterate over rows
     for index, row in df2.iterrows():
@@ -426,24 +429,46 @@ def plot_silent_data_corruption_error_instances(data1, data2):
             # add retval to the dataframe
             df2.at[index, 'retval'] = int(retval)
 
-    min_retval = df1['retval'].min()
-    max_retval = df1['retval'].max()
-    print(f"Minimum retval: {min_retval}, Maximum retval: {max_retval}")
+    # get unique syscalls from both df1 and df2
+    unique_syscalls = set(df1['syscall']).union(set(df2['syscall']))
 
-    sns.relplot(
-        data=df1,
-        x='syscall',
-        y='retval',
-        hue='syscall',
-        palette='viridis',
-        legend=False
-    )
-    plt.xlabel('Syscall', fontsize=14)
-    plt.ylabel('Return Value', fontsize=14)
-    plt.xticks(rotation=45, fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.yscale('log')
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    # ensure all unique syscalls are present in df1
+    for syscall in unique_syscalls:
+        if syscall not in df1['syscall'].values:
+            df1 = pd.concat([df1, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
+
+    # ensure all unique syscalls are present in df2
+    for syscall in unique_syscalls:
+        if syscall not in df2['syscall'].values:
+            print(syscall)
+            df2 = pd.concat([df2, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
+
+    # Sort syscalls alphabetically for consistent tick order
+    sorted_syscalls = sorted(unique_syscalls)
+    df1['syscall'] = pd.Categorical(df1['syscall'], categories=sorted_syscalls, ordered=True)
+    df2['syscall'] = pd.Categorical(df2['syscall'], categories=sorted_syscalls, ordered=True)
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex=True, sharey=True)
+
+    for ax, df, title in zip(axs, [df1, df2], ['SyscaLLM (GPT-4o)', 'Random']):
+        sns.scatterplot(
+            data=df,
+            x='retval',
+            y='syscall',
+            hue='syscall',
+            palette='viridis',
+            legend=False,
+            ax=ax
+        )
+        ax.set_title(title, fontsize=14)
+        ax.set_xlabel(None)
+        ax.set_ylabel(None)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
+        ax.set_xscale('log')
+        ax.grid(linestyle='--', alpha=0.7)
+
+    fig.supxlabel('Return Value (log scale)', fontsize=14)
     plt.tight_layout()
     plt.show()
 
@@ -490,16 +515,16 @@ def main():
     # plot outcome rates for SyscaLLM (GPT-4o) and Random
     # plot_outcome(all_llm_data, all_random_data)
     
-    # # plot normalized failure types by syscall
-    # plot_outcome_per_syscall(all_llm_data, all_random_data)
+    # plot normalized failure types by syscall
+    plot_outcome_per_syscall(all_llm_data, all_random_data)
 
-    # # plot failure types by syscall
-    # plot_failure_per_syscall(all_llm_data, all_random_data)
+    # plot failure types by syscall
+    plot_failure_per_syscall(all_llm_data, all_random_data)
 
-    # # plot silent data corruption by syscall
+    # plot silent data corruption by syscall
     # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
-    # plot_silent_data_corruption_error_instances(all_llm_data, all_random_data)
+    plot_error_instances(all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()
