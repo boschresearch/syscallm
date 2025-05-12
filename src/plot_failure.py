@@ -19,8 +19,7 @@ palette = {
     'No Changes': colors[4]
 }
 
-# runs = config.runs
-runs=4
+runs = config.runs
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -85,6 +84,8 @@ def print_statistics(llm, random):
     print(llm_counts)
     print("Percentages:")
     print(llm_percentages)
+    print("Average Counts:")
+    print(llm_counts.mean().round(2).to_frame().T)
     print("Average Percentages:")
     print(avg_llm_percentages.to_frame().T)
     print(f"---------------------------------------------------------------")
@@ -93,6 +94,8 @@ def print_statistics(llm, random):
     print(random_counts)
     print("Percentages:")
     print(random_percentages)
+    print("Average Counts:")
+    print(random_counts.mean().round(2).to_frame().T)
     print("Average Percentages:")
     print(avg_random_percentages.to_frame().T)
     print(f"---------------------------------------------------------------")
@@ -206,14 +209,14 @@ def plot_failure_per_syscall(data1, data2):
             legend=(i == len(outcome_types) - 1),
             logx=(outcome in ['App Crash', 'App Hang', 'Error Exit'])
         )
-        axs[i].set_title(outcome, fontsize=15)
+        axs[i].set_title(outcome, fontsize=14)
         axs[i].set_ylabel(None)
         axs[i].grid(linestyle='--', alpha=0.7)
         axs[i].invert_yaxis()
         if i == len(outcome_types) - 1:
             axs[i].legend(title=None, loc='upper right')
 
-    fig.supxlabel('Count', fontsize=15)
+    fig.supxlabel('Count', fontsize=14)
     plt.tight_layout(rect=[0, 0, 1, 0.93])
     plt.show()
 
@@ -342,7 +345,7 @@ def plot_test_case_distribution(data):
     ax = pivot_df.plot(
         kind='barh',
         figsize=(6, 8),
-        colormap='viridis',
+        colormap='Set1_r',
         logx=True,
         width=0.8
     )
@@ -358,7 +361,7 @@ def plot_test_case_distribution(data):
     plt.ylabel(None)
     plt.xticks(fontsize=13)
     plt.yticks(fontsize=13)
-    plt.legend(title='Run', fontsize=15, loc='upper right', bbox_to_anchor=(1, 0.7))
+    plt.legend(title='Run', fontsize=15, loc='upper right')
     plt.grid(linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
@@ -445,7 +448,7 @@ def plot_error_instances(data1, data2):
     df1['syscall'] = pd.Categorical(df1['syscall'], categories=sorted_syscalls, ordered=True)
     df2['syscall'] = pd.Categorical(df2['syscall'], categories=sorted_syscalls, ordered=True)
 
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
+    fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex=True, sharey=True)
 
     for ax, df, title in zip(axs, [df1, df2], ['SyscaLLM (GPT-4o)', 'Random']):
         sns.scatterplot(
@@ -457,15 +460,15 @@ def plot_error_instances(data1, data2):
             legend=False,
             ax=ax
         )
-        ax.set_title(title, fontsize=16)
+        ax.set_title(title, fontsize=14)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
-        ax.tick_params(axis='x', labelsize=14)
-        ax.tick_params(axis='y', labelsize=14)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
         ax.set_xscale('log')
         ax.grid(linestyle='--', alpha=0.7)
 
-    fig.supxlabel('Return Value (log scale)', fontsize=16)
+    fig.supxlabel('Return Value (log scale)', fontsize=14)
     plt.tight_layout()
     plt.show()
 
