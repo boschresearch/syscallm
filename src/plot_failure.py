@@ -345,7 +345,7 @@ def plot_test_case_distribution(data):
     ax = pivot_df.plot(
         kind='barh',
         figsize=(6, 8),
-        colormap='Set1_r',
+        color=['#d63b27', '#d6cd27', '#341a9e', '#27d641', '#a02ca0'],
         logx=True,
         width=0.8
     )
