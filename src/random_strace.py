@@ -2,7 +2,17 @@ import os
 import argparse
 import json
 import random
+import numpy as np
 import re
+
+def draw_log_uniform_including_zero(p_zero=0.005):
+    if np.random.rand() < p_zero:
+        return np.uint64(0)
+    else:
+        log_min = np.log(1)
+        log_max = np.log(np.uint64(18446744073709551615))
+        log_sample = np.random.uniform(log_min, log_max)
+        return np.uint64(np.exp(log_sample))
 
 def set_id(json_content, str):
     json_content["syslog_monitor_config"]["id"] = str
@@ -13,8 +23,9 @@ def set_id(json_content, str):
 def get_random_number(mode):
     """Generate a random unsigned integer."""
     if mode == "success":
-        return random.randint(0, 18446744073709551615)
+        return draw_log_uniform_including_zero()
     elif mode == "error_code":
+        # TODO: Update according to the new distribution
         return random.randint(1, 4095)
 
 
