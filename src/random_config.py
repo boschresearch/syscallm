@@ -5,25 +5,43 @@ import random
 import numpy as np
 import re
 
-def draw_log_uniform_including_zero(p_zero=0.005):
+cache = {}
+
+def add_to_cache(key, value):
+    global cache
+
+    if key not in cache:
+        cache[key] = [value]
+    else:
+        cache[key].append(value)
+
+
+def lookup_cache(key, value):
+    """Check if the key-value pair exists in the cache."""
+    global cache
+
+    if key not in cache:
+        return False
+    elif value not in cache[key]:
+        return False
+    else:
+        return True
+
+
+def draw_log_uniform_including_zero(max_value, p_zero=0.005):
     if np.random.rand() < p_zero:
         return np.uint64(0)
     else:
         log_min = np.log(1)
-        log_max = np.log(np.uint64(18446744073709551615))
+        log_max = np.log(np.uint64(max_value))
         log_sample = np.random.uniform(log_min, log_max)
         return np.uint64(np.exp(log_sample))
-
-def set_id(json_content, str):
-    json_content["syslog_monitor_config"]["id"] = str
-
-    return json_content
 
 
 def get_random_number(mode):
     """Generate a random unsigned integer."""
     if mode == "success":
-        return draw_log_uniform_including_zero()
+        return draw_log_uniform_including_zero(max_value=18446744073709551615)
     elif mode == "error_code":
         # TODO: Update according to the new distribution
         return random.randint(1, 4095)
@@ -31,10 +49,27 @@ def get_random_number(mode):
 
 def get_random_config(json_content, mode):
     """Generate a randomly generated fault injection config file."""
-    for fault in json_content["syslog_monitor_config"]["faults"]:
-        # generate random number
-        random_number = get_random_number(mode)
+    global cache
 
+    # get id from json content
+    id = json_content["syslog_monitor_config"]["id"]
+    # extract system call name from id
+    system_call = id[:id.rfind("_")]
+
+    for fault in json_content["syslog_monitor_config"]["faults"]:
+        # extract the invocation number from the fault
+        invocation_number = re.search(r":when=(\d+)", fault).group(1)
+        # manage cache by appending the invocation number to the system call
+        system_call += f"_{invocation_number}"
+
+        while True:
+            # generate random number
+            random_number = get_random_number(mode)
+            # check if the random number is already in the cache
+            if not lookup_cache(system_call, random_number):
+                # add the random number to the cache
+                add_to_cache(system_call, random_number)
+                break
         # replace the return value with the random number
         output_str = re.sub(r"retval=\d+", f"retval={str(random_number)}", fault)
 

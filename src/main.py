@@ -3,7 +3,7 @@ import inject_what
 import filter_strace
 import inject_when
 import strace_to_config
-import random_strace
+import random_config
 import argparse
 
 if __name__ == "__main__":
@@ -34,7 +34,6 @@ if __name__ == "__main__":
     filter_strace.process_all_models(strace_dir_path)
     inject_when.process_all_models(strace_dir_path)
     strace_to_config.process_all_models(strace_dir_path)
-
-    random_strace.process_all_models(config_dir_path, mode)
+    random_config.process_all_models(config_dir_path, mode)
 
     os.system(f"rm -r {strace_dir_path}")
