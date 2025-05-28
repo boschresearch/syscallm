@@ -110,6 +110,10 @@ def process_model_directory(model_dir_path, mode):
     for run in os.listdir(model_dir_path):
         run_dir_path = os.path.join(model_dir_path, run)
         if os.path.isdir(run_dir_path):
+            # reset the cache for each run directory
+            global cache
+            cache = {}
+
             process_run_directory(run_dir_path, mode)
 
 
