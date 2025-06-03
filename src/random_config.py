@@ -84,7 +84,7 @@ def process_json_file(json_file_path, mode):
         json_content = json.load(file)
 
     # output file path
-    output_file_path = json_file_path.replace("config", f"config_random")
+    output_file_path = json_file_path.replace("config", f"config_random_log")
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     # generate random JSON content

@@ -370,7 +370,7 @@ def plot_test_case_distribution(data):
 def plot_error_instances(data1, data2):
     # config files for SyscaLLM (GPT-4o) and Random
     llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
-    random_config = "/home/jom8be/workspaces/data/config_random/gpt-4o"
+    random_config = "/home/jom8be/workspaces/data/config_random_log/gpt-4o"
 
     # filter out only sdc
     df1 = data1[data1['error_exit'] == True].copy()
@@ -481,7 +481,7 @@ def main():
     for i in range(1, runs + 1):
         # file paths
         llm_generated_file = f'/home/jom8be/workspaces/data/result/result{i}.csv'
-        random_generated_file = f'/home/jom8be/workspaces/data/result/result_random{i}.csv'
+        random_generated_file = f'/home/jom8be/workspaces/data/result/result_random_log{i}.csv'
 
         # read data
         llm_data, random_data = read_data(llm_generated_file, random_generated_file)
@@ -513,7 +513,7 @@ def main():
     plot_test_case_distribution(all_llm_data)
 
     # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    # plot_outcome(all_llm_data, all_random_data)
+    plot_outcome(all_llm_data, all_random_data)
     
     # plot normalized failure types by syscall
     plot_outcome_per_syscall(all_llm_data, all_random_data)
@@ -522,7 +522,7 @@ def main():
     plot_failure_per_syscall(all_llm_data, all_random_data)
 
     # plot silent data corruption by syscall
-    # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
     plot_error_instances(all_llm_data, all_random_data)
 
