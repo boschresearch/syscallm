@@ -441,6 +441,112 @@ def plot_error_instances(data1, data2):
     plt.show()
 
 
+def plot_error_instances_no_changes(data1, data2):
+    # config files for SyscaLLM (GPT-4o) and Random
+    llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
+    random_config = "/home/jom8be/workspaces/data/config_random_log/gpt-4o"
+
+    # filter out only sdc
+    df1 = data1[data1['no_changes'] == True].copy()
+    df2 = data2[data2['no_changes'] == True].copy()
+
+    df1['retval'] = None
+    df2['retval'] = None
+
+    # iterate over rows
+    for index, row in df1.iterrows():
+        # id
+        syscall = row['id']
+        # run number
+        run = row['run']
+
+        # config file path that resulted in sdc
+        config_path = f"{llm_config}/run{run}/{syscall}.json"
+
+        with open(config_path, 'r') as file:
+            # load JSON data
+            config_data = json.load(file)
+
+            # strace parameter for tampering
+            strace_param = config_data['syslog_monitor_config']['faults'][0]
+
+            # extract return value
+            retval_start = strace_param.find("retval=") + len("retval=")
+            retval_end = strace_param.find(":", retval_start)
+            retval = strace_param[retval_start:retval_end]
+
+            # add retval to the dataframe
+            df1.loc[index, 'retval'] = int(retval)
+
+    # iterate over rows
+    for index, row in df2.iterrows():
+        # id
+        syscall = row['id']
+        # run number
+        run = row['run']
+
+        # config file path that resulted in sdc
+        config_path = f"{random_config}/run{run}/{syscall}.json"
+
+        with open(config_path, 'r') as file:
+            # load JSON data
+            config_data = json.load(file)
+
+            # strace parameter for tampering
+            strace_param = config_data['syslog_monitor_config']['faults'][0]
+
+            # extract return value
+            retval_start = strace_param.find("retval=") + len("retval=")
+            retval_end = strace_param.find(":", retval_start)
+            retval = strace_param[retval_start:retval_end]
+
+            # add retval to the dataframe
+            df2.at[index, 'retval'] = int(retval)
+
+    # get unique syscalls from both df1 and df2
+    unique_syscalls = set(df1['syscall']).union(set(df2['syscall']))
+
+    # ensure all unique syscalls are present in df1
+    for syscall in unique_syscalls:
+        if syscall not in df1['syscall'].values:
+            df1 = pd.concat([df1, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
+
+    # ensure all unique syscalls are present in df2
+    for syscall in unique_syscalls:
+        if syscall not in df2['syscall'].values:
+            print(syscall)
+            df2 = pd.concat([df2, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
+
+    # Sort syscalls alphabetically for consistent tick order
+    sorted_syscalls = sorted(unique_syscalls)
+    df1['syscall'] = pd.Categorical(df1['syscall'], categories=sorted_syscalls, ordered=True)
+    df2['syscall'] = pd.Categorical(df2['syscall'], categories=sorted_syscalls, ordered=True)
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex=True, sharey=True)
+
+    for ax, df, title in zip(axs, [df1, df2], ['SyscaLLM (GPT-4o)', 'Random']):
+        sns.scatterplot(
+            data=df,
+            x='retval',
+            y='syscall',
+            hue='syscall',
+            palette='viridis',
+            legend=False,
+            ax=ax
+        )
+        ax.set_title(title, fontsize=14)
+        ax.set_xlabel(None)
+        ax.set_ylabel(None)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
+        ax.set_xscale('log')
+        ax.grid(linestyle='--', alpha=0.7)
+
+    fig.supxlabel('Return Value for No Changes (log scale)', fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+
 def main():    
     # initialize accumulators as empty Series
     all_llm_data = pd.DataFrame() 
@@ -493,6 +599,7 @@ def main():
     plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
     plot_error_instances(all_llm_data, all_random_data)
+    plot_error_instances_no_changes(all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()
