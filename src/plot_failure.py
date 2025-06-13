@@ -376,6 +376,17 @@ def extract_retval(config_path):
         return 0
     
 
+def add_retvals(df, config_base):
+    if df.empty:
+        df['retval'] = pd.Series(dtype=int)
+        return df
+    df['retval'] = df.apply(
+        lambda row: extract_retval(f"{config_base}/run{row['run']}/{row['id']}.json"),
+        axis=1
+    )
+    return df
+    
+
 def process_dataset(data, config_base, error_types):
     dfs = {}
     for err in error_types:
@@ -408,6 +419,7 @@ def plot_error_instances(data1, data2):
         for err, df in dataset_dfs.items():
             dfs[(label, err)] = df
 
+    # get unique syscalls
     all_syscalls = pd.concat([data1, data2])
     unique_syscalls = sorted(all_syscalls['syscall'].unique().tolist())
     
@@ -446,7 +458,6 @@ def plot_error_instances(data1, data2):
 
 
 def plot_error_instances_no_changes(data1, data2):
-    # config files for SyscaLLM (GPT-4o) and Random
     llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
     random_config = "/home/jom8be/workspaces/data/config_random_log/gpt-4o"
 
@@ -454,77 +465,15 @@ def plot_error_instances_no_changes(data1, data2):
     df1 = data1[data1['no_changes'] == True].copy()
     df2 = data2[data2['no_changes'] == True].copy()
 
-    df1['retval'] = None
-    df2['retval'] = None
+    df1 = add_retvals(df1, llm_config)
+    df2 = add_retvals(df2, random_config)
 
-    # iterate over rows
-    for index, row in df1.iterrows():
-        # id
-        syscall = row['id']
-        # run number
-        run = row['run']
+    # get unique syscalls
+    all_syscalls = pd.concat([data1, data2])
+    unique_syscalls = sorted(all_syscalls['syscall'].unique().tolist())
 
-        # config file path that resulted in sdc
-        config_path = f"{llm_config}/run{run}/{syscall}.json"
-
-        with open(config_path, 'r') as file:
-            # load JSON data
-            config_data = json.load(file)
-
-            # strace parameter for tampering
-            strace_param = config_data['syslog_monitor_config']['faults'][0]
-
-            # extract return value
-            retval_start = strace_param.find("retval=") + len("retval=")
-            retval_end = strace_param.find(":", retval_start)
-            retval = strace_param[retval_start:retval_end]
-
-            # add retval to the dataframe
-            df1.loc[index, 'retval'] = int(retval)
-
-    # iterate over rows
-    for index, row in df2.iterrows():
-        # id
-        syscall = row['id']
-        # run number
-        run = row['run']
-
-        # config file path that resulted in sdc
-        config_path = f"{random_config}/run{run}/{syscall}.json"
-
-        with open(config_path, 'r') as file:
-            # load JSON data
-            config_data = json.load(file)
-
-            # strace parameter for tampering
-            strace_param = config_data['syslog_monitor_config']['faults'][0]
-
-            # extract return value
-            retval_start = strace_param.find("retval=") + len("retval=")
-            retval_end = strace_param.find(":", retval_start)
-            retval = strace_param[retval_start:retval_end]
-
-            # add retval to the dataframe
-            df2.at[index, 'retval'] = int(retval)
-
-    # get unique syscalls from both df1 and df2
-    unique_syscalls = set(df1['syscall']).union(set(df2['syscall']))
-
-    # ensure all unique syscalls are present in df1
-    for syscall in unique_syscalls:
-        if syscall not in df1['syscall'].values:
-            df1 = pd.concat([df1, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
-
-    # ensure all unique syscalls are present in df2
-    for syscall in unique_syscalls:
-        if syscall not in df2['syscall'].values:
-            print(syscall)
-            df2 = pd.concat([df2, pd.DataFrame([{'syscall': syscall, 'retval': 0}])], ignore_index=True)
-
-    # Sort syscalls alphabetically for consistent tick order
-    sorted_syscalls = sorted(unique_syscalls)
-    df1['syscall'] = pd.Categorical(df1['syscall'], categories=sorted_syscalls, ordered=True)
-    df2['syscall'] = pd.Categorical(df2['syscall'], categories=sorted_syscalls, ordered=True)
+    for df in [df1, df2]:
+        df['syscall'] = pd.Categorical(df['syscall'], categories=unique_syscalls, ordered=True)
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex=True, sharey=True)
 
@@ -585,22 +534,22 @@ def main():
     all_llm_data = all_llm_data[column_order]
     all_random_data = all_random_data[column_order]
     
-    print_statistics(all_llm_data, all_random_data)
-    print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
+    # print_statistics(all_llm_data, all_random_data)
+    # print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
 
-    plot_test_case_distribution(all_llm_data)
+    # plot_test_case_distribution(all_llm_data)
 
-    # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    plot_outcome(all_llm_data, all_random_data)
+    # # plot outcome rates for SyscaLLM (GPT-4o) and Random
+    # plot_outcome(all_llm_data, all_random_data)
     
-    # plot normalized failure types by syscall
-    plot_outcome_per_syscall(all_llm_data, all_random_data)
+    # # plot normalized failure types by syscall
+    # plot_outcome_per_syscall(all_llm_data, all_random_data)
 
-    # plot failure types by syscall
-    plot_failure_per_syscall(all_llm_data, all_random_data)
+    # # plot failure types by syscall
+    # plot_failure_per_syscall(all_llm_data, all_random_data)
 
-    # plot silent data corruption by syscall
-    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+    # # plot silent data corruption by syscall
+    # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
     plot_error_instances(all_llm_data, all_random_data)
     plot_error_instances_no_changes(all_llm_data, all_random_data)
