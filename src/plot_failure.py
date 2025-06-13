@@ -376,6 +376,19 @@ def extract_retval(config_path):
         return 0
     
 
+def extract_when(config_path):
+    try:
+        with open(config_path, 'r') as file:
+            config_data = json.load(file)
+            strace_param = config_data['syslog_monitor_config']['faults'][0]
+            when_start = strace_param.find("when=") + len("when=")
+            when_end = strace_param.find("..", when_start)
+            when = strace_param[when_start:when_end]
+            return int(when)
+    except Exception:
+        return 0
+    
+
 def process_dataset(data, config_base, result_types):
     dfs = {}
     for res in result_types:
@@ -385,6 +398,10 @@ def process_dataset(data, config_base, result_types):
         else:
             df['retval'] = df.apply(
                 lambda row: extract_retval(f"{config_base}/run{row['run']}/{row['id']}.json"),
+                axis=1
+            )
+            df['when'] = df.apply(
+                lambda row: extract_when(f"{config_base}/run{row['run']}/{row['id']}.json"),
                 axis=1
             )
         dfs[res] = df
@@ -420,13 +437,13 @@ def plot_error_instances(data1, data2):
         for col, err in enumerate(error_types):
             ax = axs[row, col]
             df = dfs[(label, err)]
-            sns.scatterplot(
+            scatter = sns.scatterplot(
                 data=df,
                 x='retval',
                 y='syscall',
-                hue='syscall',
+                hue='when',
                 palette='viridis',
-                legend=False,
+                legend=(row == 0 and col == len(error_types) - 1),
                 ax=ax
             )
             if row == 0:
@@ -440,6 +457,10 @@ def plot_error_instances(data1, data2):
             ax.tick_params(axis='y', labelsize=11)
             ax.set_xscale('log')
             ax.grid(linestyle='--', alpha=0.7)
+
+    handles, labels = axs[0, -1].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, title='when', loc='upper right', bbox_to_anchor=(1.04, 0.95), fontsize=12, title_fontsize=13)
 
     fig.supxlabel('Return Value (log scale)', fontsize=15)
     plt.tight_layout()
@@ -462,16 +483,16 @@ def plot_error_instances_no_changes(data1, data2):
     for df in [df1, df2]:
         df['syscall'] = pd.Categorical(df['syscall'], categories=unique_syscalls, ordered=True)
 
-    fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharex=True, sharey=True)
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
 
     for ax, df, title in zip(axs, [df1, df2], ['SyscaLLM (GPT-4o)', 'Random']):
         sns.scatterplot(
             data=df,
             x='retval',
             y='syscall',
-            hue='syscall',
+            hue='when',
             palette='viridis',
-            legend=False,
+            legend=True,
             ax=ax
         )
         ax.set_title(title, fontsize=14)
@@ -481,9 +502,12 @@ def plot_error_instances_no_changes(data1, data2):
         ax.tick_params(axis='y', labelsize=12)
         ax.set_xscale('log')
         ax.grid(linestyle='--', alpha=0.7)
+        ax.get_legend().remove()
 
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, title='when', loc='upper left', bbox_to_anchor=(0.9, 0.95))
     fig.supxlabel('Return Value for No Changes (log scale)', fontsize=14)
-    plt.tight_layout()
+    plt.tight_layout(pad=1.0, w_pad=0.5, h_pad=0.5, rect=[0, 0, 0.9, 1])
     plt.show()
 
 
@@ -521,22 +545,22 @@ def main():
     all_llm_data = all_llm_data[column_order]
     all_random_data = all_random_data[column_order]
     
-    # print_statistics(all_llm_data, all_random_data)
-    # print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
+    print_statistics(all_llm_data, all_random_data)
+    print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
 
-    # plot_test_case_distribution(all_llm_data)
+    plot_test_case_distribution(all_llm_data)
 
-    # # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    # plot_outcome(all_llm_data, all_random_data)
+    # plot outcome rates for SyscaLLM (GPT-4o) and Random
+    plot_outcome(all_llm_data, all_random_data)
     
-    # # plot normalized failure types by syscall
-    # plot_outcome_per_syscall(all_llm_data, all_random_data)
+    # plot normalized failure types by syscall
+    plot_outcome_per_syscall(all_llm_data, all_random_data)
 
-    # # plot failure types by syscall
-    # plot_failure_per_syscall(all_llm_data, all_random_data)
+    # plot failure types by syscall
+    plot_failure_per_syscall(all_llm_data, all_random_data)
 
-    # # plot silent data corruption by syscall
-    # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+    # plot silent data corruption by syscall
+    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
     plot_error_instances(all_llm_data, all_random_data)
     plot_error_instances_no_changes(all_llm_data, all_random_data)
