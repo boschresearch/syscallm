@@ -363,8 +363,35 @@ def plot_test_case_distribution(data):
     plt.show()
 
 
+def extract_retval(config_path):
+    try:
+        with open(config_path, 'r') as file:
+            config_data = json.load(file)
+            strace_param = config_data['syslog_monitor_config']['faults'][0]
+            retval_start = strace_param.find("retval=") + len("retval=")
+            retval_end = strace_param.find(":", retval_start)
+            retval = strace_param[retval_start:retval_end]
+            return int(retval)
+    except Exception:
+        return 0
+    
+
+def process_dataset(data, config_base, error_types):
+    dfs = {}
+    for err in error_types:
+        df = data[data[err] == True].copy()
+        if df.empty:
+            df['retval'] = pd.Series(dtype=int)
+        else:
+            df['retval'] = df.apply(
+                lambda row: extract_retval(f"{config_base}/run{row['run']}/{row['id']}.json"),
+                axis=1
+            )
+        dfs[err] = df
+    return dfs
+
+
 def plot_error_instances(data1, data2):
-    # config files for SyscaLLM (GPT-4o) and Random
     llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
     random_config = "/home/jom8be/workspaces/data/config_random_log/gpt-4o"
 
@@ -375,40 +402,17 @@ def plot_error_instances(data1, data2):
         ('Random', data2, random_config)
     ]
 
-    # prepare a dict to hold dataframes for each (dataset, error_type)
     dfs = {}
-
-    for label, data, config_base in datasets:
-        for err in error_types:
-            df = data[data[err] == True].copy()
-            df['retval'] = None
-
-            for index, row in df.iterrows():
-                syscall = row['id']
-                run = row['run']
-                config_path = f"{config_base}/run{run}/{syscall}.json"
-
-                try:
-                    with open(config_path, 'r') as file:
-                        config_data = json.load(file)
-                        strace_param = config_data['syslog_monitor_config']['faults'][0]
-                        retval_start = strace_param.find("retval=") + len("retval=")
-                        retval_end = strace_param.find(":", retval_start)
-                        retval = strace_param[retval_start:retval_end]
-                        df.at[index, 'retval'] = int(retval)
-                except Exception:
-                    df.at[index, 'retval'] = 0
-
+    for label, data, config in datasets:
+        dataset_dfs = process_dataset(data, config, error_types)
+        for err, df in dataset_dfs.items():
             dfs[(label, err)] = df
 
-    # get all unique syscalls
-    unique_syscalls = set()
-    for data in [data1, data2]:
-        unique_syscalls.update(data['syscall'])
-
-    sorted_syscalls = sorted(unique_syscalls)
+    all_syscalls = pd.concat([data1, data2])
+    unique_syscalls = sorted(all_syscalls['syscall'].unique().tolist())
+    
     for df in dfs.values():
-        df['syscall'] = pd.Categorical(df['syscall'], categories=sorted_syscalls, ordered=True)
+        df['syscall'] = pd.Categorical(df['syscall'], categories=unique_syscalls, ordered=True)
 
     fig, axs = plt.subplots(2, 4, figsize=(18, 10), sharex=True, sharey=True)
     for row, (label, _, _) in enumerate(datasets):
