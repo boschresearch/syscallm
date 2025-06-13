@@ -376,21 +376,10 @@ def extract_retval(config_path):
         return 0
     
 
-def add_retvals(df, config_base):
-    if df.empty:
-        df['retval'] = pd.Series(dtype=int)
-        return df
-    df['retval'] = df.apply(
-        lambda row: extract_retval(f"{config_base}/run{row['run']}/{row['id']}.json"),
-        axis=1
-    )
-    return df
-    
-
-def process_dataset(data, config_base, error_types):
+def process_dataset(data, config_base, result_types):
     dfs = {}
-    for err in error_types:
-        df = data[data[err] == True].copy()
+    for res in result_types:
+        df = data[data[res] == True].copy()
         if df.empty:
             df['retval'] = pd.Series(dtype=int)
         else:
@@ -398,7 +387,7 @@ def process_dataset(data, config_base, error_types):
                 lambda row: extract_retval(f"{config_base}/run{row['run']}/{row['id']}.json"),
                 axis=1
             )
-        dfs[err] = df
+        dfs[res] = df
     return dfs
 
 
@@ -461,12 +450,10 @@ def plot_error_instances_no_changes(data1, data2):
     llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
     random_config = "/home/jom8be/workspaces/data/config_random_log/gpt-4o"
 
-    # filter out only sdc
-    df1 = data1[data1['no_changes'] == True].copy()
-    df2 = data2[data2['no_changes'] == True].copy()
+    result_types = ['no_changes']
 
-    df1 = add_retvals(df1, llm_config)
-    df2 = add_retvals(df2, random_config)
+    df1 = process_dataset(data1, llm_config, result_types)['no_changes']
+    df2 = process_dataset(data2, random_config, result_types)['no_changes']
 
     # get unique syscalls
     all_syscalls = pd.concat([data1, data2])
