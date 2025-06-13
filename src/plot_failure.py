@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import seaborn as sns
 import config
 import json
@@ -133,7 +132,7 @@ def plot_outcome_per_syscall(data1, data2):
 
     g = sns.catplot(
         data=df,
-        kind='point',            # or 'strip', 'box', 'bar', etc.
+        kind='point',
         x='failures',
         y='syscall',
         hue='type',
@@ -167,20 +166,18 @@ def plot_outcome_per_syscall(data1, data2):
 
 
 def plot_failure_per_syscall(data1, data2):
-    df1 = data1.groupby('syscall')[['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']].sum().div(runs).reset_index()
-    df2 = data2.groupby('syscall')[['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']].sum().div(runs).reset_index()
+    failure_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
+    titles = ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
+
+    df1 = data1.groupby('syscall')[failure_types].sum().div(runs).reset_index()
+    df2 = data2.groupby('syscall')[failure_types].sum().div(runs).reset_index()
 
     df1['type'] = 'SyscaLLM (GPT-4o)'
     df2['type'] = 'Random'
 
     df = pd.concat([df1, df2], ignore_index=True)
 
-    outcome_labels = {
-        'app_crash': 'App Crash',
-        'app_hang': 'App Hang',
-        'error_exit': 'Error Exit',
-        'silent_data_corruption': 'Silent Data Corruption'
-    }
+    outcome_labels = dict(zip(failure_types, titles))
     df.rename(columns=outcome_labels, inplace=True)
 
     df = df.melt(
@@ -317,7 +314,6 @@ def plot_outcome(llm, random):
 
 def plot_test_case_distribution(data):
     data = data.copy()
-    # data.drop(columns=['id'], inplace=True)
 
     df = data.groupby(['run', 'syscall']).sum().reset_index()
 
