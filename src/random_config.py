@@ -75,7 +75,7 @@ def get_random_number(mode):
 
 def get_random_config(json_content, mode):
     """Generate a randomly generated fault injection config file."""
-    global cache
+    global cache_value, cache_count
 
     # get id from json content
     id = json_content["syslog_monitor_config"]["id"]
@@ -93,7 +93,7 @@ def get_random_config(json_content, mode):
 
         if cur_invocation_cnt < cur_value_cnt:
             # get a random number from the cache
-            random_number = cache_value[system_call][cur_invocation_cnt - 1]
+            random_number = cache_value[system_call][cur_invocation_cnt]
         else:
             # generate a new random number
             random_number = get_random_number(mode)
