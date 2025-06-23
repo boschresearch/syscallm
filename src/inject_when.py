@@ -5,7 +5,7 @@ import app_syscalls
 
 def get_when_params(target_syscall):
     # get the number of syscalls in the strace file for specific syscall
-    count = app_syscalls.get_app_syscalls()[target_syscall]
+    count = app_syscalls.get_redis_syscalls()[target_syscall]
     
     # make when parameters
     return [f":when={i}..{i}" for i in range(1, count + 1)]

@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-from app_syscalls import get_app_syscalls
+from app_syscalls import get_redis_syscalls
 
 plt.rcParams["font.family"] = "Times New Roman"
 
 def main():
-    syscall_dict = get_app_syscalls()
+    syscall_dict = get_redis_syscalls()
 
     df = pd.DataFrame([
         {'Syscall': syscall, 'Count': count} 

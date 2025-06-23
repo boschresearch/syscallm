@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import config
 import json
-from app_syscalls import get_app_syscalls
+from app_syscalls import get_redis_syscalls
 
 plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
-outcome_types = ['no_changes', 'app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
+failure_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
+outcome_types = ['no_changes'] + failure_types
 renamed_outcome_types = ['No Changes', 'App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
+missing_syscalls = ['rseq', 'clock_adjtime', 'epoll_ctl_old', 'epoll_wait_old', 'io_pgetevents', 'timerfd']
 
 palette = {
     'App Crash': colors[0],
@@ -110,26 +112,25 @@ def print_silent_data_corruption_syscalls(llm, random):
 
 
 def plot_outcome_per_syscall(data1, data2):
-    df1 = data1.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
-    df2 = data2.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
+    def aggregate_and_compute_failures(df, label):
+        agg = df.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
+        agg['type'] = label
+        agg['failures'] = agg[failure_types].sum(axis=1)
+        agg['no_changes'] = agg['no_changes'].fillna(0)
+        agg['total'] = agg['failures'] + agg['no_changes']
+        agg['failures'] = agg['failures'].div(agg['total']).mul(100).round(2)
+        return agg[['syscall', 'type', 'failures']]
     
-    df1['type'] = 'SyscaLLM (GPT-4o)'
-    df2['type'] = 'Random'
-
-    failure_columns = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
-
-    for df in [df1, df2]:
-        df['failures'] = df[failure_columns].sum(axis=1)
-        df['no_changes'] = df['no_changes'].fillna(0)
-        df['total'] = df['no_changes'] + df['failures']
-        df['failures'] = df['failures'].div(df['total']).mul(100).round(2)
+    df1 = aggregate_and_compute_failures(data1, 'SyscaLLM (GPT-4o)')
+    df2 = aggregate_and_compute_failures(data2, 'Random')
         
     df = pd.concat([df1, df2], ignore_index=True)
-    df = df[['syscall', 'type', 'failures']]
     
+    # sort syscalls alphabetically
     syscall_order = sorted(df['syscall'].unique())
     df['syscall'] = pd.Categorical(df['syscall'], categories=syscall_order, ordered=True)
 
+    # plot
     g = sns.catplot(
         data=df,
         kind='point',
@@ -142,17 +143,19 @@ def plot_outcome_per_syscall(data1, data2):
         linewidth=1.5,
         height=6,
         aspect=0.7,
-        palette={'SyscaLLM (GPT-4o)': '#6A5ACD', 'Random': '#FF8C00'}
+        palette={
+            'SyscaLLM (GPT-4o)': '#6A5ACD',
+            'Random': '#FF8C00'
+        }
     )
 
+    # axis labels and formatting
     g.set_axis_labels("Failure Rate (%)", None, fontsize=16)
-
     for ax in g.axes.flat:
         ax.set_ylabel("")
-        ax.yaxis.label.set_visible(False)
         ax.grid(linestyle='--', alpha=0.5)
 
-    # Legend styling
+    # style legend
     legend = g._legend
     legend.set_title(None)
     legend.set_bbox_to_anchor((1, 0.15))
@@ -161,36 +164,39 @@ def plot_outcome_per_syscall(data1, data2):
     frame.set_facecolor('white')
     frame.set_edgecolor('lightgrey')
     frame.set_linewidth(0.7)
+
     plt.tight_layout()
     plt.show()
 
 
 def plot_failure_per_syscall(data1, data2):
-    failure_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
     titles = ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
+    outcome_labels = dict(zip(failure_types, titles))
 
-    df1 = data1.groupby('syscall')[failure_types].sum().div(runs).reset_index()
-    df2 = data2.groupby('syscall')[failure_types].sum().div(runs).reset_index()
+    def aggregate_data(df, label):
+        agg = df.groupby('syscall')[failure_types].sum().div(runs).reset_index()
+        agg['type'] = label
+        agg.rename(columns=outcome_labels, inplace=True)
+        return agg
 
-    df1['type'] = 'SyscaLLM (GPT-4o)'
-    df2['type'] = 'Random'
-
+    # aggregate data
+    df1 = aggregate_data(data1, 'SyscaLLM (GPT-4o)')
+    df2 = aggregate_data(data2, 'Random')
     df = pd.concat([df1, df2], ignore_index=True)
 
-    outcome_labels = dict(zip(failure_types, titles))
-    df.rename(columns=outcome_labels, inplace=True)
-
+    # reshape for plotting
     df = df.melt(
         id_vars=['syscall', 'type'],
-        value_vars=list(outcome_labels.values()),
+        value_vars=titles,
         var_name='outcome_type',
         value_name='count'
     )
 
-    outcome_types = list(outcome_labels.values())
-    fig, axs = plt.subplots(1, len(outcome_types), figsize=(10, 6), sharey=True)
+    # setup subplots
+    fig, axs = plt.subplots(1, len(titles), figsize=(10, 6), sharey=True)
 
-    for i, outcome in enumerate(outcome_types):
+    for i, outcome in enumerate(titles):
+        ax = axs[i]
         sub_df = df[df['outcome_type'] == outcome]
         pivot_df = sub_df.pivot_table(
             index='syscall',
@@ -201,17 +207,19 @@ def plot_failure_per_syscall(data1, data2):
 
         pivot_df.set_index('syscall').plot(
             kind='barh',
-            ax=axs[i],
+            ax=ax,
             color=['#FF8C00', '#6A5ACD'],
-            legend=(i == len(outcome_types) - 1),
+            legend=(i == len(titles) - 1),
             logx=(outcome in ['App Crash', 'App Hang', 'Error Exit'])
         )
-        axs[i].set_title(outcome, fontsize=14)
-        axs[i].set_ylabel(None)
-        axs[i].grid(linestyle='--', alpha=0.7)
-        axs[i].invert_yaxis()
-        if i == len(outcome_types) - 1:
-            axs[i].legend(title=None, loc='upper right')
+
+        ax.set_title(outcome, fontsize=14)
+        ax.set_ylabel(None)
+        ax.grid(linestyle='--', alpha=0.7)
+        ax.invert_yaxis()
+
+        if i == len(titles) - 1:
+            ax.legend(title=None, loc='upper right')
 
     fig.supxlabel('Count', fontsize=14)
     plt.tight_layout(rect=[0, 0, 1, 0.93])
@@ -253,31 +261,32 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     plt.show()
 
 
-def plot_outcome(llm, random):
-    total_count = llm['run'].value_counts()
+def plot_outcome(data1, data2):
+    # compute total test cases per run
+    total_count = data1['run'].value_counts()
 
-    llm_counts = llm[outcome_types].groupby(llm['run']).sum().reset_index()
-    random_counts = random[outcome_types].groupby(random['run']).sum().reset_index()
+    # aggregate outcomes
+    def aggregate_outcomes(df, label):
+        counts = df[outcome_types].groupby(df['run']).sum().reset_index()
+        counts['type'] = label
+        return counts
+    
+    llm_counts = aggregate_outcomes(data1, 'SyscaLLM (GPT-4o)')
+    random_counts = aggregate_outcomes(data2, 'Random')
 
-    llm_counts['type'] = 'SyscaLLM (GPT-4o)'
-    random_counts['type'] = 'Random'
-
+    # combine and normalize
     df = pd.concat([llm_counts, random_counts], ignore_index=True)
-
     df[outcome_types] = df[outcome_types].astype(float)
 
-    # normalize the outcome columns by dividing by the total count for each run
     for run in range(1, runs + 1):
-        total = total_count[run]
-        df.loc[df['run'] == run, outcome_types] = df.loc[df['run'] == run, outcome_types].div(total).mul(100).astype(float)
+        if run in total_count:
+            total = total_count[run]
+            df.loc[df['run'] == run, outcome_types] = (
+                df.loc[df['run'] == run, outcome_types] / total * 100
+            )
     
-    xtick_labels = {
-        'app_crash': 'App Crash',
-        'app_hang': 'App Hang',
-        'error_exit': 'Error Exit',
-        'silent_data_corruption': 'Silent Data Corruption',
-        'no_changes': 'No Changes'
-    }
+    # prepare for plotting
+    outcome_labels = dict(zip(outcome_types, renamed_outcome_types))
 
     df = df.melt(
         id_vars=['run', 'type'],
@@ -285,8 +294,7 @@ def plot_outcome(llm, random):
         var_name='outcome_type',
         value_name='rate'
     )
-
-    df['outcome_type'] = df['outcome_type'].map(xtick_labels)
+    df['outcome_type'] = df['outcome_type'].map(outcome_labels)
 
     plt.figure(figsize=(5, 4))
 
@@ -298,7 +306,10 @@ def plot_outcome(llm, random):
         style='type',
         markers=True,
         linewidth=2,
-        palette={'SyscaLLM (GPT-4o)': '#6A5ACD', 'Random': '#FF8C00'}
+        palette={
+            'SyscaLLM (GPT-4o)': '#6A5ACD',
+            'Random': '#FF8C00'
+        }
     )
 
     plt.ylabel('Percentage (%)', fontsize=14)
@@ -315,27 +326,24 @@ def plot_outcome(llm, random):
 def plot_test_case_distribution(data):
     data = data.copy()
 
-    df = data.groupby(['run', 'syscall']).sum().reset_index()
-
-    df['total'] = df[['app_crash', 'error_exit', 'app_hang', 'silent_data_corruption', 'no_changes']].sum(axis=1)
+    # sum outcomes by run and syscall
+    outcome_sums  = data.groupby(['run', 'syscall']).sum().reset_index()
+    outcome_sums ['total'] = outcome_sums [outcome_types].sum(axis=1)
     
-    df.drop(columns=outcome_types, inplace=True)
+    # drop original outcome columns
+    outcome_sums.drop(columns=outcome_types, inplace=True)
 
-    syscall_dict = get_app_syscalls()
+    # filter to only include relevant syscalls
+    syscall_dict = get_redis_syscalls()
+    outcome_sums = outcome_sums[outcome_sums['syscall'].isin(syscall_dict.keys())]
 
-    for index, row in df.iterrows():
-        syscall = row['syscall']
-        if syscall in syscall_dict:
-            df.at[index, 'total'] = row['total']
+    # ensure all syscalls and runs are present (fill missing with 0)
+    full_index = pd.MultiIndex.from_product([range(1, runs + 1), syscall_dict.keys()], names=['run', 'syscall'])
+    df = outcome_sums.set_index(['run', 'syscall']).reindex(full_index, fill_value=0).reset_index()
 
-    for syscall in syscall_dict.keys():
-        if syscall not in df['syscall'].values:
-            for run in range(1, runs + 1):
-                new_row = pd.DataFrame([{'run': run, 'syscall': syscall, 'total': 0}])
-                df = pd.concat([df, new_row], ignore_index=True)
-
-    pivot_df = df.pivot(index='syscall', columns='run', values='total')
-    pivot_df.fillna(0, inplace=True)
+    # pivot for plotting
+    pivot_df = df.pivot(index='syscall', columns='run', values='total').fillna(0)
+    # reverse the order of syscalls for better visualization
     pivot_df = pivot_df.iloc[::-1]
 
     ax = pivot_df.plot(
@@ -346,12 +354,14 @@ def plot_test_case_distribution(data):
         width=0.8
     )
 
+    # highlight syscalls that are missing man pages
     for label in ax.get_yticklabels():
-        if label.get_text() in ['rseq']:
+        syscall = label.get_text()
+        if syscall in missing_syscalls:
             label.set_fontstyle('italic')
             label.set_color('red')
             label.set_alpha(0.7)
-            label.set_text(f"{label.get_text()} (X)")
+            label.set_text(f"{syscall} (X)")
 
     plt.xlabel('Count (log scale)', fontsize=15)
     plt.ylabel(None)

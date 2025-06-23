@@ -1,5 +1,5 @@
 # TODO: better way of filtering syscalls
-def get_app_syscalls():
+def get_redis_syscalls():
     return {
         "access": 1,
         "arch_prctl": 1,
@@ -35,4 +35,36 @@ def get_app_syscalls():
         "set_tid_address": 1,
         "sysinfo": 1,
         "write": 2
+    }
+
+def get_redis_syscalls():
+    return {
+        "access": 1,
+        "arch_prctl": 1,
+        "brk": 3,
+        "clone": 1,
+        "close": 3,
+        "execve": 1,
+        "fcntl": 2,
+        "getcwd": 1,
+        "getegid": 1,
+        "geteuid": 2,
+        "getgid": 1,
+        "getpid": 2,
+        "getppid": 1,
+        "getrandom": 1,
+        "getuid": 1,
+        "mmap": 8,
+        "mprotect": 3,
+        "munmap": 1,
+        "newfstatat": 2,
+        "openat": 3,
+        "pread64": 2,
+        "prlimit64": 1,
+        "read": 4,
+        "rseq": 1,
+        "rt_sigaction": 7,
+        "set_robust_list": 2,
+        "set_tid_address": 1,
+        "write": 1
     }

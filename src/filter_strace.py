@@ -19,7 +19,7 @@ def process_run_directory(run_dir_path):
             base_filename = os.path.splitext(filename)[0]
 
             # check if the base filename is not in the app syscalls
-            if base_filename not in app_syscalls.get_app_syscalls().keys():
+            if base_filename not in app_syscalls.get_redis_syscalls().keys():
                 strace_file_path = os.path.join(run_dir_path, filename)
                 delete_file(strace_file_path)
 
