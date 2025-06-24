@@ -18,7 +18,7 @@ if __name__ == "__main__":
     json_dir_path = os.path.join(data_dir_path, "json")
     strace_dir_path = os.path.join(data_dir_path, "strace")
     config_dir_path = os.path.join(data_dir_path, "config")
-    config_random_dir_path = os.path.join(data_dir_path, f"config_random")
+    config_random_dir_path = os.path.join(data_dir_path, f"config_random_log")
 
     # delete the directory if it already exists
     if os.path.exists(strace_dir_path):

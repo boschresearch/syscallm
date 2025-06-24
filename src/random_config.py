@@ -5,24 +5,50 @@ import random
 import numpy as np
 import re
 
-cache = {}
+cache_value = {}
+cache_count = {}
 
-def add_to_cache(key, value):
-    global cache
+def get_count(syscall, invocation_num):
+    global cache_count
 
-    if key not in cache:
-        cache[key] = [value]
+    key = (syscall, invocation_num)
+
+    if cache_count.get(key) is None:
+        cache_count[key] = 0
+
+    return cache_count[key]
+
+
+def increment_count(syscall, invocation_num):
+    global cache_count
+
+    cache_count[(syscall, invocation_num)] = cache_count.get((syscall, invocation_num)) + 1
+
+
+def get_current_value_count(syscall):
+    global cache_value
+
+    if syscall not in cache_value:
+        return 0
     else:
-        cache[key].append(value)
+        return len(cache_value[syscall])
 
 
-def lookup_cache(key, value):
-    """Check if the key-value pair exists in the cache."""
-    global cache
+def add_value(key, value):
+    global cache_value
 
-    if key not in cache:
+    if key not in cache_value:
+        cache_value[key] = [value]
+    else:
+        cache_value[key].append(value)
+
+
+def lookup_value(key, value):
+    global cache_value
+
+    if key not in cache_value:
         return False
-    elif value not in cache[key]:
+    elif value not in cache_value[key]:
         return False
     else:
         return True
@@ -49,7 +75,7 @@ def get_random_number(mode):
 
 def get_random_config(json_content, mode):
     """Generate a randomly generated fault injection config file."""
-    global cache
+    global cache_value, cache_count
 
     # get id from json content
     id = json_content["syslog_monitor_config"]["id"]
@@ -58,18 +84,29 @@ def get_random_config(json_content, mode):
 
     for fault in json_content["syslog_monitor_config"]["faults"]:
         # extract the invocation number from the fault
-        invocation_number = re.search(r":when=(\d+)", fault).group(1)
-        # manage cache by appending the invocation number to the system call
-        system_call += f"_{invocation_number}"
+        invocation_num = re.search(r":when=(\d+)", fault).group(1)
 
-        while True:
-            # generate random number
+        # get the count of the system call and invocation number that are processed
+        cur_invocation_cnt = get_count(system_call, invocation_num)
+        # get the current number of values in the cache for the system call
+        cur_value_cnt = get_current_value_count(system_call)
+
+        if cur_invocation_cnt < cur_value_cnt:
+            # get a random number from the cache
+            random_number = cache_value[system_call][cur_invocation_cnt]
+        else:
+            # generate a new random number
             random_number = get_random_number(mode)
             # check if the random number is already in the cache
-            if not lookup_cache(system_call, random_number):
-                # add the random number to the cache
-                add_to_cache(system_call, random_number)
-                break
+            while lookup_value(system_call, random_number):
+                # generate a new random number
+                random_number = get_random_number(mode)
+            # add the random number to the cache
+            add_value(system_call, random_number)
+
+        # increment the count for the system call and invocation number
+        increment_count(system_call, invocation_num)
+
         # replace the return value with the random number
         output_str = re.sub(r"retval=\d+", f"retval={str(random_number)}", fault)
 
@@ -84,7 +121,7 @@ def process_json_file(json_file_path, mode):
         json_content = json.load(file)
 
     # output file path
-    output_file_path = json_file_path.replace("config", f"config_random")
+    output_file_path = json_file_path.replace("config", f"config_random_log")
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     # generate random JSON content
@@ -110,9 +147,10 @@ def process_model_directory(model_dir_path, mode):
     for run in os.listdir(model_dir_path):
         run_dir_path = os.path.join(model_dir_path, run)
         if os.path.isdir(run_dir_path):
-            # reset the cache for each run directory
-            global cache
-            cache = {}
+            # reset the cache_count for each run directory
+            global cache_count, cache_value
+            cache_value = {}
+            cache_count = {}
 
             process_run_directory(run_dir_path, mode)
 
