@@ -49,8 +49,6 @@ def process_strace_file(strace_file_path):
         with open(output_file_path, 'w') as json_file:
             json.dump(json_content, json_file, indent=4)
 
-        print(f"Generated JSON file: {output_file_path}")
-
 
 def process_run_directory(run_dir_path):
     """Process all strace files in a run directory."""
@@ -63,15 +61,18 @@ def process_run_directory(run_dir_path):
 def process_model_directory(model_dir_path):
     """Process all run directories in a model directory."""
     for run in os.listdir(model_dir_path):
+        print(run, end=" ")
         run_dir_path = os.path.join(model_dir_path, run)
         if os.path.isdir(run_dir_path):
             process_run_directory(run_dir_path)
+    print()
 
 
 def process_all_models(strace_dir):
     """Main function to process all model directories."""
     for model in os.listdir(strace_dir):
         model_dir_path = os.path.join(strace_dir, model)
+        print(f"Converting parameters to config files for {model_dir_path}...", end=" ")
         if os.path.isdir(model_dir_path):
             process_model_directory(model_dir_path)
 
@@ -80,9 +81,11 @@ if __name__ == "__main__":
     # parse command line arguments
     parser = argparse.ArgumentParser(description="Process strace files to safety-fuzzing testbed config commands.")
     parser.add_argument("--strace-dir-path", type=str, help="Path to the directory containing files to generated strace fault injection parameters (can be relative or absolute).")
+    parser.add_argument("--mode", type=str, required=True, help="Fault injection mode (e.g., 'error_code', 'success')")
     args = parser.parse_args()
 
     # json directory path
     strace_dir_path = os.path.abspath(args.strace_dir_path)
+    strace_dir_path = os.path.join(strace_dir_path, args.mode)
 
     process_all_models(strace_dir_path)
