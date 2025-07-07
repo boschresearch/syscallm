@@ -112,8 +112,12 @@ def get_random_config(json_content, mode, distribution):
         # increment the count for the system call and invocation number
         increment_count(system_call, invocation_num)
 
-        # replace the return value with the random number
-        output_str = re.sub(r"retval=\d+", f"retval={str(random_number)}", fault)
+        if mode == "success":
+            # replace the return value with the random number
+            output_str = re.sub(r"retval=\d+", f"retval={str(random_number)}", fault)
+        elif mode == "error_code":
+            # replace the error code with the random number
+            output_str = re.sub(r"error=[^:]+", f"error={str(random_number)}", fault)
 
     # update the json content with the random values
     json_content["syslog_monitor_config"]["faults"] = [output_str]

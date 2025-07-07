@@ -11,19 +11,16 @@ def write_list_to_file(file_path, list_of_strings):
 
 def json_to_strace(data, mode):
     """Convert JSON data to strace commands."""
-    if 'name' not in data or 'test_values' not in data:
-        return
-    
-    syscall_name = data['name']
-    test_values = data['test_values']
+    if not isinstance(data, dict) or 'name' not in data:
+        return []
 
+    syscall_name = data['name']
     strace_commands = []
-    if mode == "success":
-        for test_value in test_values:
-            strace_commands.append(f"inject={syscall_name}:retval={test_value}")
-    elif mode == "error_code":
-        for test_value in test_values:
-            strace_commands.append(f"inject={syscall_name}:error_code={test_value}")
+
+    if mode == "success" and 'test_values' in data:
+        strace_commands = [f"inject={syscall_name}:retval={val}" for val in data['test_values']]
+    elif mode == "error_code" and 'error_codes' in data:
+        strace_commands = [f"inject={syscall_name}:error={val}" for val in data['error_codes']]
 
     return strace_commands
 
