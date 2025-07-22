@@ -129,8 +129,7 @@ if __name__ == "__main__":
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
-                if model == "gpt-4o":
-                    print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)}, Invalid: {invalid}")
+                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)}, Invalid: {invalid}")
 
     # figure size
     plt.figure(figsize=(5, 4))
@@ -176,4 +175,4 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
-    plt.show()
+    plt.savefig(f"system_call_coverage_{mode}.png")
