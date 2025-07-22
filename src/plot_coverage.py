@@ -142,11 +142,13 @@ if __name__ == "__main__":
 
     # calculate average percentage per model and temperature
     avg_percentage = df.groupby(['model_name', 'temperature'])['percentage'].mean()
+    avg_percentage = pd.to_numeric(avg_percentage, errors='coerce')
     print("Average percentage per model and temperature:")
     print(avg_percentage.round(2))
 
     # calculate average count per model and temperature
     avg_count = df.groupby(['model_name', 'temperature'])['count'].mean()
+    avg_count = pd.to_numeric(avg_count, errors='coerce')
     print("Average count per model and temperature:")
     print(avg_count.round(2))
 
