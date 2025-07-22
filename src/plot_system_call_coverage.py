@@ -9,6 +9,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
 models = config.models
+mode = config.mode
 
 def categorize_valid_invalid(json_dir):
     valid = []
@@ -109,8 +110,7 @@ def get_stuck_in_loop_by_error(invalid, json_dir):
 
 if __name__ == "__main__":
     # directory to all json data
-    # TODO: mode should be passed as an argument
-    data_dir = os.path.abspath(os.path.join(os.getcwd(), "..", "data", "json_for_coverage", "success"))
+    data_dir = os.path.abspath(os.path.join(os.getcwd(), "data", "json", mode))
 
     # directories json data for each temperature
     temperature = ["0.3", "0.5", "0.7"]
