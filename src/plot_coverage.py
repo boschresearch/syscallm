@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
-                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)}, Invalid: {invalid}")
+                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid: {invalid}\n")
 
     # figure size
     plt.figure(figsize=(5, 4))
