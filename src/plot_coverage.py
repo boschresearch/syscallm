@@ -159,17 +159,30 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, invalid, _, _, _ = categorize(json_dir)
+                valid, invalid, invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small = categorize(json_dir)
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
-                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid: {invalid}\n")
+                df_invalid = pd.DataFrame({
+                    'model_name': [model] * 3,
+                    'run': [run] * 3,
+                    'count': [len(invalid_stuck_in_loop), len(invalid_out_of_bound), len(invalid_token_size_too_small)],
+                    'temperature': [temp] * 3,
+                    'invalid_type': ['stuck_in_loop', 'out_of_bound', 'token_size_too_small']
+                })
+
+                if 'df_invalid_all' not in locals():
+                    df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
+
+                df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
+
+                # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Out of Bound: {invalid_out_of_bound},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+
+    # total number of syscalls
+    total_count = 335
 
     # figure size
     plt.figure(figsize=(5, 4))
-    
-    # total number of syscalls
-    total_count = 335
 
     # add percentage
     df['percentage'] = (df['count'] / total_count) * 100
@@ -189,7 +202,7 @@ if __name__ == "__main__":
     # color
     palette = sns.color_palette('rocket', len(df['model_name'].unique()))
 
-    # line plot
+    # line plot for valid and invalid
     lineplot = sns.lineplot(
         data=df,
         x='temperature',
@@ -211,4 +224,36 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
-    plt.savefig(f"system_call_coverage_{mode}.png")
+    plt.savefig(f"figures/coverage_{mode}.png")
+
+    # figure size
+    plt.figure(figsize=(6, 4))
+
+    # calculate percentage for each invalid type
+    df_invalid_all['percentage'] = (df_invalid_all['count'] / total_count) * 100
+
+    # category plot for invalid causes
+    g = sns.catplot(
+        data=df_invalid_all,
+        x='temperature',
+        y='percentage',
+        hue='invalid_type',
+        col='model_name',
+        kind='bar',
+        palette='mako',
+        height=4,
+        aspect=1
+    )
+
+    # plot parameters
+    g.set_axis_labels('Temperature', 'Invalid Percentage (%)')
+    g.set_titles('{col_name}')
+    g.set(ylim=(0, 100))
+    g.set_xticklabels(size=15)
+    g.set_yticklabels(size=15)
+    g.tight_layout()
+
+    for ax in g.axes.flatten():
+        ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
+
+    plt.savefig(f"figures/coverage_invalid_causes_{mode}.png")
