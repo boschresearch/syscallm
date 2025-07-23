@@ -1,7 +1,10 @@
 import os
+import re
+import errno
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from collections import Counter
 from utils import is_json
 import config
 
@@ -10,6 +13,14 @@ plt.rcParams["font.family"] = "Times New Roman"
 runs = config.runs
 models = config.models
 mode = config.mode
+
+
+def categorize(json_dir):
+    valid, invalid = categorize_valid_invalid(json_dir)
+    invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small = find_why_invalid(invalid, json_dir)
+
+    return valid, invalid, invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small
+
 
 def categorize_valid_invalid(json_dir):
     valid = []
@@ -27,70 +38,109 @@ def categorize_valid_invalid(json_dir):
                 invalid.append(man_page)
                 
     return valid, invalid
-    
-
-def categorize(json_dir):
-    valid, invalid = categorize_valid_invalid(json_dir)
-    stuck_in_loop, invalid_format = find_why_invalid(invalid, json_dir)
-
-    return valid, invalid, stuck_in_loop, invalid_format
 
 
 def find_why_invalid(invalid, json_dir):
     invalid_stuck_in_loop = []
-    invalid_format = []
+    invalid_out_of_bound = []
+    invalid_token_size_too_small = []
 
     model_name = os.path.basename(os.path.dirname(json_dir))
-    if model_name.startswith("gpt-4"):
-        stuck_in_loop = get_stuck_in_loop_by_error(invalid, json_dir)
+
+    for filename in invalid:
+        filepath = os.path.join(json_dir, filename + '.json')
+
+        with open(filepath, 'r') as f:
+            content = f.read()
+
+            if model_name.startswith("gpt-4"):
+                if is_token_size_too_small_gpt(content):
+                    invalid_token_size_too_small.append(filename)
+                    continue
+
+            llm_generated_values = extract_llm_generated_values(content)
+
+            stuck = is_stuck_in_loop(llm_generated_values)
+            out_of_bound = is_out_of_bound(llm_generated_values)
+
+            if stuck:
+                invalid_stuck_in_loop.append(filename)
+            
+            if out_of_bound:
+                invalid_out_of_bound.append(filename)
+
+            if not stuck and not out_of_bound:
+                invalid_token_size_too_small.append(filename)
+
+    return invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small
+
+
+def extract_llm_generated_values(string: str):
+    if mode == "success":
+        return get_test_values(string)
+    elif mode == "error_code":
+        return get_error_codes(string)
+
+
+def get_test_values(string: str):
+    match = re.search(r'"test_values"\s*:\s*\[([^\]]*)\]?', string)
+
+    if match:
+        # extract the test values substring
+        values_str = match.group(1)
+
+        try:
+            values = [int(v.strip()) for v in values_str.split(',') if v.strip().isdigit()]
+        except ValueError as e:
+            print(f"Error extracting test values: {e}")
+            values = []
     else:
-        stuck_in_loop = get_stuck_in_loop(invalid, json_dir)
+        print(f"No test values found")
+        values = []
+        
+    return values
 
-    for filename in invalid:
-        if filename in stuck_in_loop:
-            invalid_stuck_in_loop.append(filename)
-        else:
-            invalid_format.append(filename)
 
-    return invalid_stuck_in_loop, invalid_format
+def get_error_codes(string: str):
+    match = re.search(r'"error_codes"\s*:\s*\[([^\]]*)', string)
 
-def get_stuck_in_loop(invalid, json_dir):
-    stuck_in_loop = []
-    matches = {"}": "{", "]": "["}
+    if not match:
+        print("No error_codes found")
+        codes = []
 
-    for filename in invalid:
-        file_path = os.path.join(json_dir, filename + '.json')
+    values_str = match.group(1)
 
-        queue = []
+    codes = re.findall(r'"([A-Z0-9_]+)"', values_str)
 
-        with open(file_path, 'r') as file:
-            for line in file:
-                for char in line:
-                    if char in matches.values():
-                        queue.append(char)
-                    elif char in matches.keys():
-                        if queue and queue[-1] == matches[char]:
-                            queue.pop()
-                        else:
-                            stuck_in_loop.append(filename)
-                            return stuck_in_loop
+    return codes
 
-            if queue:
-                stuck_in_loop.append(filename)
 
-    return stuck_in_loop
+def find_duplicated(values):
+    threshold = 3
+    counts = Counter(values)
+    return [item for item, count in counts.items() if count >= threshold]
 
-def get_stuck_in_loop_by_error(invalid, json_dir):
-    stuck_in_loop = []
-    
-    for filename in invalid:
-        file_path = os.path.join(json_dir, filename + '.json')
 
-        with open(file_path, 'r') as file:
-            if file.read().startswith("LengthFinishReasonError"):
-                stuck_in_loop.append(filename)
+def is_stuck_in_loop(values: list):
+    if find_duplicated(values):
+        return True
+    else:
+        return False
 
-    return stuck_in_loop
+
+def is_out_of_bound(values: list):
+    if mode == "success":
+        return any(v < 0 or v > 18446744073709551615 for v in values)
+    elif mode == "error_code":
+        return any(not hasattr(errno, v) for v in values)
+    return False
+
+
+def is_token_size_too_small_gpt(string: str):
+    if string.startswith("LengthFinishReasonError"):
+        return True
+    return False
+
 
 if __name__ == "__main__":
     # directory to all json data
@@ -109,7 +159,7 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, invalid, _, _ = categorize(json_dir)
+                valid, invalid, _, _, _ = categorize(json_dir)
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
