@@ -27,23 +27,7 @@ def categorize_valid_invalid(json_dir):
                 invalid.append(man_page)
                 
     return valid, invalid
-
-def categorize_batch(json_dirs):
-    valid = []
-    invalid = []
-    invalid_stuck_in_loop = []
-    invalid_format = []
-
-    for json_dir in json_dirs:
-        valid_json, invalid_json = categorize_valid_invalid(json_dir)
-        stuck_in_loop_json, format_json = find_why_invalid(invalid_json, json_dir)
-
-        valid.append(valid_json)
-        invalid.append(invalid_json)
-        invalid_stuck_in_loop.append(stuck_in_loop_json)
-        invalid_format.append(format_json)
     
-    return valid, invalid, invalid_stuck_in_loop, invalid_format
 
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
