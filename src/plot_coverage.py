@@ -179,7 +179,7 @@ if __name__ == "__main__":
                 # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Out of Bound: {invalid_out_of_bound},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
     # total number of syscalls
-    total_count = 335
+    total_count = 345
 
     # figure size
     plt.figure(figsize=(5, 4))
