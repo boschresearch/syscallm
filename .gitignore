@@ -1,2 +1,4 @@
 data/
+figures/
 **/__pycache__/
+*.png

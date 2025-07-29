@@ -1,5 +1,5 @@
 # TODO: better way of filtering syscalls
-def get_redis_syscalls():
+def get_sha256_syscalls():
     return {
         "access": 1,
         "arch_prctl": 1,
