@@ -163,6 +163,7 @@ if __name__ == "__main__":
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
+                # TODO: add total count of invalid
                 df_invalid = pd.DataFrame({
                     'model_name': [model] * 3,
                     'run': [run] * 3,
