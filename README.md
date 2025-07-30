@@ -42,6 +42,8 @@ Manual Pages → LLM Generation → JSON Tests → Strace Commands → Configura
 
 ### Basic Usage
 
+The basic usage of SyscaLLM is compiled in `scripts/run.sh`, which includes the following steps (1 to 3):
+
 #### 1. Generate Test Cases with LLMs
 
 To understand the details of LLM-based test generation, see [`llm-syscall/README.md`](llm-syscall/README.md) for information on:
