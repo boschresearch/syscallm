@@ -88,6 +88,9 @@ python3 plot_failure.py
 python3 plot_adaptability.py
 ```
 
+## Open Source Software
+This project relies on the usage of open-source Python libraries. Please see [`llm-syscall/README.md`](llm-syscall/README.md) and [`safety-fuzzing/README.md`](safety-fuzzing/README.md).
+
 ## Contact
 
 For any questions or issues, please contact [JOM8BE](mailto:MinHee.Jo@de.bosch.com).
