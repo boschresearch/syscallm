@@ -48,7 +48,7 @@ The basic usage of SyscaLLM is compiled in `scripts/run.sh`, which includes the 
 
 #### 1. Generate Test Cases with LLMs
 
-To understand the details of LLM-based test generation, see [`llm-syscall/README.md`](llm-syscall/README.md) for information on:
+To understand the details of LLM-based test generation, see [`llm-syscall/README.md`](https://github.boschdevcloud.com/bios-SPARTA/llm-syscall/tree/main) for information on:
 
 - How to extract manual pages for each system call
 - Setting up `OPENAI_API_KEY` and configuring model parameters
@@ -65,7 +65,7 @@ bash ./scripts/process_json.sh
 
 #### 3. Run Safety Fuzzing Tests
 
-To understand the details of error injections, see [`safety-fuzzing/README.md`](safety-fuzzing/README.md) for information on:
+To understand the details of error injections, see [`safety-fuzzing/README.md`](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/tree/main) for information on:
 
 - How to configure the experiment environment
 - How to build a monitor component
@@ -91,7 +91,7 @@ python3 plot_adaptability.py
 ```
 
 ## Open Source Software
-This project relies on the usage of open-source Python libraries. Please see [`llm-syscall/README.md`](llm-syscall/README.md) and [`safety-fuzzing/README.md`](safety-fuzzing/README.md).
+This project relies on the usage of open-source Python libraries. Please see [`llm-syscall/README.md`](https://github.boschdevcloud.com/bios-SPARTA/llm-syscall/tree/main) and [`safety-fuzzing/README.md`](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/tree/main).
 
 ## Contact
 
