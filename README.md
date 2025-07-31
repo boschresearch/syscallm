@@ -2,6 +2,8 @@
 
 SyscaLLM is an system call fault injection testing framework that combines Large Language Models (LLMs) with error injection techniques to monitor software robustness and reliability. The project automates the generation of system call error injection test cases and provides a comprehensive testbed for evaluating application behavior under various fault conditions.
 
+For a high-level overview and additional context, please refer to the [Application Error Handling Testing documentation](https://inside-docupedia.bosch.com/confluence2/display/ICT174/Application+Error+Handling+Testing).
+
 ## Overview
 
 SyscaLLM consists of three main components:
