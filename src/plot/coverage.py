@@ -215,7 +215,7 @@ if __name__ == "__main__":
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
     plt.ylim(0, 100)
-    plt.legend(fontsize=13, loc='upper right', bbox_to_anchor=(1, 0.45))
+    plt.legend(fontsize=9, loc='upper right', bbox_to_anchor=(1, 0.3))
     plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
