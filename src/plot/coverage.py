@@ -7,7 +7,7 @@ import seaborn as sns
 from collections import Counter
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from utils import is_json
+import utils.utils as utils
 import utils.config as config
 
 plt.rcParams["font.family"] = "Times New Roman"
@@ -35,7 +35,7 @@ def categorize_valid_invalid(json_dir):
         if os.path.isfile(file_path) and file_path.endswith('.json'):
             man_page = filename.split('.json')[0]
 
-            if is_json(file_path):
+            if utils.is_json(file_path):
                 valid.append(man_page)
             else:
                 invalid.append(man_page)
