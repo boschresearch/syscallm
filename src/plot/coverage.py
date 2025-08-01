@@ -16,6 +16,8 @@ runs = config.runs
 models = config.models
 temperature = config.temperature
 mode = config.mode
+total_syscall_count = config.total_syscall_count
+data_dir = config.data_dir
 
 
 def categorize(json_dir):
@@ -146,12 +148,8 @@ def is_token_size_too_small_gpt(string: str):
 
 
 if __name__ == "__main__":
-    # directory to all json data
-    data_dir = os.path.abspath(os.path.join(os.getcwd(), "data", "json", mode))
-
     # directories json data for each temperature
-    temperature = ["0.3", "0.5", "0.7"]
-    temperature_dirs = [os.path.join(data_dir, f"temperature_{temp}") for temp in temperature]
+    temperature_dirs = [os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature]
 
     df = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
 
@@ -182,14 +180,11 @@ if __name__ == "__main__":
 
                 # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Out of Bound: {invalid_out_of_bound},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
-    # total number of syscalls
-    total_count = 345
-
     # figure size
     plt.figure(figsize=(5, 4))
 
     # add percentage
-    df['percentage'] = (df['count'] / total_count) * 100
+    df['percentage'] = (df['count'] / total_syscall_count) * 100
 
     # calculate average percentage per model and temperature
     avg_percentage = df.groupby(['model_name', 'temperature'])['percentage'].mean()
@@ -234,7 +229,7 @@ if __name__ == "__main__":
     plt.figure(figsize=(6, 4))
 
     # calculate percentage for each invalid type
-    df_invalid_all['percentage'] = (df_invalid_all['count'] / total_count) * 100
+    df_invalid_all['percentage'] = (df_invalid_all['count'] / total_syscall_count) * 100
 
     # category plot for invalid causes
     g = sns.catplot(
