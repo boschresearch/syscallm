@@ -184,16 +184,16 @@ if __name__ == "__main__":
 
                 # add total count of invalid
                 df_invalid = pd.DataFrame({
-                    'model_name': [model] * 4,
-                    'run': [run] * 4,
-                    'count': [len(valid_out_of_bound), len(invalid_stuck_in_loop), len(invalid_token_size_too_small), len(invalid)],
-                    'temperature': [temp] * 4,
-                    'invalid_type': ['out_of_bound', 'stuck_in_loop', 'token_size_too_small', 'total_invalid']
+                    'model_name': [model] * 3,
+                    'run': [run] * 3,
+                    'count': [len(valid_out_of_bound), len(invalid_stuck_in_loop), len(invalid_token_size_too_small)],
+                    'temperature': [temp] * 3,
+                    'invalid_type': ['valid_out_of_bound', 'invalid_stuck_in_loop', 'invalid_token_size_too_small']
                 })
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
 
-                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid Out of Bound: {valid_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Out of Bound: {valid_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
     # figure size
     plt.figure(figsize=(5, 4))
