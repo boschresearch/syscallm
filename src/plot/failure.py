@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import config
+import utils.config as config
 import json
 from app_syscalls import get_redis_syscalls
 

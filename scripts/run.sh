@@ -6,7 +6,7 @@ WORKING_DIR="$(dirname "$SCRIPT_DIR")"
 # check if nvidia-smi is available
 if command -v nvidia-smi &> /dev/null; then
     # generate JSON files with LLMs
-    bash "$WORKING_DIR/llm-syscall/script/run.sh"
+    bash "$WORKING_DIR/llm-syscall/scripts/run.sh"
 fi
 
 # configure the environment variables

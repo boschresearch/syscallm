@@ -1,3 +1,16 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.config as config
+
+kernel_5_4_0 = config.kernel_5_4_0
+kernel_5_15_0 = config.kernel_5_15_0
+kernel_6_8_0 = config.kernel_6_8_0
+kernel_6_11_0 = config.kernel_6_11_0
+missing_5_15_0 = config.missing_5_15_0
+missing_6_8_0 = config.missing_6_8_0
+missing_6_11_0 = config.missing_6_11_0
+
 def read_syscalls(file_path):
     """Read syscalls from a file and return them as a set."""
     with open(file_path, 'r') as file:
@@ -25,24 +38,13 @@ def find_unavailable_syscalls(base_syscalls, missing_file):
 
 
 def main():
-    # file paths for each Ubuntu version
-    kernel_5_4_0 = "/home/jom8be/workspaces/data/syscall/syscalls_5.4.0.txt"
-    kernel_5_15_0 = "/home/jom8be/workspaces/data/syscall/syscalls_5.15.0.txt"
-    kernel_6_8_0 = "/home/jom8be/workspaces/data/syscall/syscalls_6.8.0.txt"
-    kernel_6_11_0 = "/home/jom8be/workspaces/data/syscall/syscalls_6.11.0.txt"
-
     # compare syscalls between versions
-    versions = [("5.4.0", kernel_5_4_0), ("5.15.0", kernel_5_15_0), ("6.8.0", kernel_6_8_0), ("6.11.0", kernel_6_11_0)]
-
-    # file paths for missing syscalls
-    missing_5_15_0 = "/home/jom8be/workspaces/data/syscall/missing_syscalls_5.15.0.txt"
-    missing_6_8_0 = "/home/jom8be/workspaces/data/syscall/missing_syscalls_6.8.0.txt"
-    missing_6_11_0 = "/home/jom8be/workspaces/data/syscall/missing_syscalls_6.11.0.txt"
+    versions = [("5.4.0", config.kernel_5_4_0), ("5.15.0", config.kernel_5_15_0), ("6.8.0", config.kernel_6_8_0), ("6.11.0", config.kernel_6_11_0)]
 
     missing = [
-        missing_5_15_0,
-        missing_6_8_0,
-        missing_6_11_0
+        config.missing_5_15_0,
+        config.missing_6_8_0,
+        config.missing_6_11_0
     ]
 
     for i in range(len(versions) - 1):
@@ -59,7 +61,6 @@ def main():
         added_and_no_man = find_unavailable_syscalls(added, missing[i])
         print(f"  Added syscalls that have man page: {sorted(added_and_no_man)}")
         print()
-
 
 
 if __name__ == "__main__":

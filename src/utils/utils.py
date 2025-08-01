@@ -1,6 +1,6 @@
 import os
 import json
-import config
+import utils.config as config
 
 models = config.models
 

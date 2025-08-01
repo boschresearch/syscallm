@@ -5,13 +5,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils import is_json
-import config
+import utils.config as config
 
 plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
 models = config.models
+temperature = config.temperature
 mode = config.mode
 
 
