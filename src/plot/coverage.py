@@ -246,6 +246,7 @@ if __name__ == "__main__":
     g.set(ylim=(0, 100))
     g.set_xticklabels(size=15)
     g.set_yticklabels(size=15)
+    g._legend.set_title(None)
     g.tight_layout()
 
     for ax in g.axes.flatten():
