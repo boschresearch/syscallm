@@ -164,21 +164,19 @@ if __name__ == "__main__":
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
-                # TODO: add total count of invalid
+                # add total count of invalid
                 df_invalid = pd.DataFrame({
-                    'model_name': [model] * 3,
-                    'run': [run] * 3,
-                    'count': [len(invalid_stuck_in_loop), len(invalid_out_of_bound), len(invalid_token_size_too_small)],
-                    'temperature': [temp] * 3,
-                    'invalid_type': ['stuck_in_loop', 'out_of_bound', 'token_size_too_small']
+                    'model_name': [model] * 4,
+                    'run': [run] * 4,
+                    'count': [len(invalid_stuck_in_loop), len(invalid_out_of_bound), len(invalid_token_size_too_small), len(invalid)],
+                    'temperature': [temp] * 4,
+                    'invalid_type': ['stuck_in_loop', 'out_of_bound', 'token_size_too_small', 'total_invalid']
                 })
 
                 if 'df_invalid_all' not in locals():
                     df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
-
-                # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Out of Bound: {invalid_out_of_bound},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
     # figure size
     plt.figure(figsize=(5, 4))
@@ -231,7 +229,7 @@ if __name__ == "__main__":
     # calculate percentage for each invalid type
     df_invalid_all['percentage'] = (df_invalid_all['count'] / total_syscall_count) * 100
 
-    # category plot for invalid causes
+    # category plot for invalid causes including total invalid
     g = sns.catplot(
         data=df_invalid_all,
         x='temperature',
