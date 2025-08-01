@@ -176,6 +176,8 @@ if __name__ == "__main__":
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
 
+                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Out of Bound: {invalid_out_of_bound},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+
     # figure size
     plt.figure(figsize=(5, 4))
 
