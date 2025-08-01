@@ -152,6 +152,7 @@ if __name__ == "__main__":
     temperature_dirs = [os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature]
 
     df = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
+    df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
 
     for temp_dir, temp in zip(temperature_dirs, temperature):
         for model in models:
@@ -172,9 +173,6 @@ if __name__ == "__main__":
                     'temperature': [temp] * 4,
                     'invalid_type': ['stuck_in_loop', 'out_of_bound', 'token_size_too_small', 'total_invalid']
                 })
-
-                if 'df_invalid_all' not in locals():
-                    df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
 
@@ -221,7 +219,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
-    plt.savefig(f"figures/coverage_{mode}.png")
+    plt.savefig(f"figures/coverage_{mode}.png", dpi=300)
 
     # figure size
     plt.figure(figsize=(6, 4))
@@ -252,5 +250,18 @@ if __name__ == "__main__":
 
     for ax in g.axes.flatten():
         ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
+        # Add percentage labels on top of each bar
+        for bar in ax.containers:
+            for rect in bar:
+                height = rect.get_height()
+                if height > 0:
+                    ax.text(
+                        rect.get_x() + rect.get_width() / 2,
+                        height,
+                        f'{height:.1f}%',
+                        ha='center',
+                        va='bottom',
+                        fontsize=8
+                    )
 
-    plt.savefig(f"figures/coverage_invalid_causes_{mode}.png")
+    plt.savefig(f"figures/coverage_invalid_causes_{mode}.png", dpi=300)
