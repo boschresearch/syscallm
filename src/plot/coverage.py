@@ -23,10 +23,10 @@ data_dir = config.data_dir
 
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
-    valid_out_of_bound, valid_all_out_of_bound = categorize_valid(valid, json_dir)
+    valid_empty, valid_out_of_bound, valid_all_out_of_bound = categorize_valid(valid, json_dir)
     invalid_stuck_in_loop, invalid_token_size_too_small = categorize_invalid(invalid, json_dir)
 
-    return valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
+    return valid, valid_empty, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
 
 
 def categorize_valid_invalid(json_dir):
@@ -77,6 +77,7 @@ def categorize_invalid(invalid, json_dir):
 
 
 def categorize_valid(valid, json_dir):
+    valid_empty = []
     valid_out_of_bound = []
     valid_all_out_of_bound = []
 
@@ -91,6 +92,10 @@ def categorize_valid(valid, json_dir):
             elif mode == "error_code":
                 llm_generated_values = content["error_codes"]
             
+            if is_empty(llm_generated_values):
+                valid_empty.append(filename)
+                continue
+
             out_of_bound = is_out_of_bound(llm_generated_values)
             all_out_of_bound = is_all_out_of_bound(llm_generated_values)
             
@@ -100,7 +105,7 @@ def categorize_valid(valid, json_dir):
             if all_out_of_bound:
                 valid_all_out_of_bound.append(filename)
 
-    return valid_out_of_bound, valid_all_out_of_bound
+    return valid_empty, valid_out_of_bound, valid_all_out_of_bound
 
 
 def extract_llm_generated_values(string: str):
@@ -153,6 +158,12 @@ def is_stuck_in_loop(values: list):
         return True
     else:
         return False
+    
+
+def is_empty(values:list):
+    if not values:
+        return True
+    return False
 
 
 def is_out_of_bound(values: list):
@@ -191,9 +202,9 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
+                valid, valid_empty, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
 
-                df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'total_count': [len(valid)], 'out_of_bound_count': [len(valid_out_of_bound)], 'temperature': [temp]})], ignore_index=True)
+                df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'total_count': [len(valid)], 'empty_count': [len(valid_empty)], 'out_of_bound_count': [len(valid_out_of_bound)], 'temperature': [temp]})], ignore_index=True)
 
                 # add total count of invalid
                 df_invalid = pd.DataFrame({
@@ -206,17 +217,18 @@ if __name__ == "__main__":
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
 
-                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Empty: {valid_empty}\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
     # add percentage
     df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
+    df_valid['empty_percentage'] = (df_valid['empty_count'] / total_syscall_count) * 100
     df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
     df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage']
 
-    # pivot data for easier plotting
+    # pivot data for easier plotting, include empty_percentage
     df_plot = df_valid.pivot_table(
         index=['model_name', 'temperature'],
-        values=['in_bound_percentage', 'out_of_bound_percentage'],
+        values=['in_bound_percentage', 'out_of_bound_percentage', 'empty_percentage'],
         aggfunc='mean'
     ).reset_index()
     
@@ -234,18 +246,32 @@ if __name__ == "__main__":
             temp_labels.append(temp)
 
     # plot bars
-    in_bound = df_plot['in_bound_percentage'].values
+    empty = df_plot['empty_percentage'].values
     out_bound = df_plot['out_of_bound_percentage'].values
+    in_bound = df_plot['in_bound_percentage'].values
 
-    # stack out_of_bound first, then in_bound on top
-    plt.bar(x, out_bound, bar_width, label='Out of Bound', color='salmon')
-    plt.bar(x, in_bound, bar_width, bottom=out_bound, label='In Bound', color='skyblue')
+    # stack: empty at bottom, then out_of_bound, then in_bound
+    plt.bar(x, empty, bar_width, label='Empty', color='lightgray')
+    plt.bar(x, out_bound, bar_width, bottom=empty, label='Out of Bound', color='salmon')
+    plt.bar(x, in_bound, bar_width, bottom=empty + out_bound, label='In Bound', color='skyblue')
+
+    for i, val in enumerate(empty):
+        if val > 0 and val < 1:  # very small but non-zero
+            plt.text(
+                x[i],
+                val + 0.5,  # offset a bit above zero
+                f'{val:.1f}%\nEmpty',
+                ha='center',
+                va='bottom',
+                fontsize=10
+            )
 
     # x ticks and labels
     plt.xticks(x, temp_labels, fontsize=11)
     plt.ylabel('Percentage (%)', fontsize=13)
-    plt.ylim(0, 100)
+    plt.ylim(0, 101)
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
+    plt.yticks(range(0, 101, 10))
     plt.legend(fontsize=13)
 
     # Add model labels beneath groups
