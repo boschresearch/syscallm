@@ -208,47 +208,53 @@ if __name__ == "__main__":
 
                 print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
-    # figure size
-    plt.figure(figsize=(5, 4))
-
     # add percentage
     df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
     df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
 
-    # calculate average percentage per model and temperature
-    avg_total_percentage = df_valid.groupby(['model_name', 'temperature'])['total_percentage'].mean()
-    avg_total_percentage = pd.to_numeric(avg_total_percentage, errors='coerce')
-    print("Average percentage per model and temperature:")
-    print(avg_total_percentage.round(2))
+    # prepare data for stacked bar plot
+    df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage']
 
-    # calculate average count per model and temperature
-    avg_total_count = df_valid.groupby(['model_name', 'temperature'])['total_count'].mean()
-    avg_total_count = pd.to_numeric(avg_total_count, errors='coerce')
-    print("Average count per model and temperature:")
-    print(avg_total_count.round(2))
+    # set up the plot
+    plt.figure(figsize=(10, 6))
 
-    # color
-    palette = sns.color_palette('rocket', len(df_valid['model_name'].unique()))
+    # pivot data for easier plotting
+    df_plot = df_valid.pivot_table(
+        index=['model_name', 'temperature'],
+        values=['in_bound_percentage', 'out_of_bound_percentage'],
+        aggfunc='mean'
+    ).reset_index()
 
-    # line plot for valid and invalid
-    lineplot = sns.lineplot(
-        data=df_valid,
-        x='temperature',
-        y='total_percentage',
-        hue='model_name',
-        style='model_name',
-        markers=True,
-        markersize=12,
-        palette=palette
-    )
+    # sort for consistent plotting
+    df_plot = df_plot.sort_values(['model_name', 'temperature'])
 
-    # plot parameters
-    plt.xlabel('Temperature', fontsize=16)
-    plt.ylabel('Percentage (%)', fontsize=16)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
+    # get unique models and temperatures
+    models_sorted = df_plot['model_name'].unique()
+    temps_sorted = sorted(df_plot['temperature'].unique())
+
+    # bar width and positions
+    bar_width = 0.35
+    n_temps = len(temps_sorted)
+    x = []
+    labels = []
+    for i, model in enumerate(models_sorted):
+        for j, temp in enumerate(temps_sorted):
+            x.append(i * (n_temps + 1) + j)
+            labels.append(f"{model}\n{temp}")
+
+    # plot bars
+    in_bound = df_plot['in_bound_percentage'].values
+    out_bound = df_plot['out_of_bound_percentage'].values
+
+    plt.bar(x, in_bound, bar_width, label='In Bound', color='skyblue')
+    plt.bar(x, out_bound, bar_width, bottom=in_bound, label='Out of Bound', color='salmon')
+
+    # x ticks and labels
+    plt.xticks(x, labels, rotation=45, ha='right', fontsize=12)
+    plt.xlabel('Model & Temperature', fontsize=16)
+    plt.ylabel('Total Percentage (%)', fontsize=16)
     plt.ylim(0, 100)
-    plt.legend(fontsize=9, loc='upper right', bbox_to_anchor=(1, 0.3))
+    plt.legend(fontsize=12)
     plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
