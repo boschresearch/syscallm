@@ -230,15 +230,16 @@ if __name__ == "__main__":
 
                 # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Empty: {valid_empty}\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
-    print("Hallucinatory Error Codes:")
-    for model, codes in hallucinatory_error_codes.items():
-        # sort codes by count descending
-        sorted_codes = sorted(codes, key=lambda x: x[1], reverse=True)
-        top_10 = sorted_codes[:10]
-        print(f"Model: {model}, Top 10 Hallucinatory Error Codes:")
-        for code, count in top_10:
-            print(f"  {code}: {count}")
-        print()
+    if mode == "error_code":
+        print("Hallucinatory Error Codes:")
+        for model, codes in hallucinatory_error_codes.items():
+            # sort codes by count descending
+            sorted_codes = sorted(codes, key=lambda x: x[1], reverse=True)
+            top_10 = sorted_codes[:10]
+            print(f"Model: {model}, Top 10 Hallucinatory Error Codes:")
+            for code, count in top_10:
+                print(f"  {code}: {count}")
+            print()
 
     # add percentage
     df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
