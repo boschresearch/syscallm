@@ -181,7 +181,7 @@ if __name__ == "__main__":
     # directories json data for each temperature
     temperature_dirs = [os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature]
 
-    df = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
+    df_valid = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
     df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
 
     for temp_dir, temp in zip(temperature_dirs, temperature):
@@ -193,7 +193,7 @@ if __name__ == "__main__":
                 # categorize valid and invalid json files
                 valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
 
-                df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
+                df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'total_count': [len(valid)], 'out_of_bound_count': [len(valid_out_of_bound)], 'temperature': [temp]})], ignore_index=True)
 
                 # add total count of invalid
                 df_invalid = pd.DataFrame({
@@ -212,28 +212,29 @@ if __name__ == "__main__":
     plt.figure(figsize=(5, 4))
 
     # add percentage
-    df['percentage'] = (df['count'] / total_syscall_count) * 100
+    df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
+    df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
 
     # calculate average percentage per model and temperature
-    avg_percentage = df.groupby(['model_name', 'temperature'])['percentage'].mean()
-    avg_percentage = pd.to_numeric(avg_percentage, errors='coerce')
+    avg_total_percentage = df_valid.groupby(['model_name', 'temperature'])['total_percentage'].mean()
+    avg_total_percentage = pd.to_numeric(avg_total_percentage, errors='coerce')
     print("Average percentage per model and temperature:")
-    print(avg_percentage.round(2))
+    print(avg_total_percentage.round(2))
 
     # calculate average count per model and temperature
-    avg_count = df.groupby(['model_name', 'temperature'])['count'].mean()
-    avg_count = pd.to_numeric(avg_count, errors='coerce')
+    avg_total_count = df_valid.groupby(['model_name', 'temperature'])['total_count'].mean()
+    avg_total_count = pd.to_numeric(avg_total_count, errors='coerce')
     print("Average count per model and temperature:")
-    print(avg_count.round(2))
+    print(avg_total_count.round(2))
 
     # color
-    palette = sns.color_palette('rocket', len(df['model_name'].unique()))
+    palette = sns.color_palette('rocket', len(df_valid['model_name'].unique()))
 
     # line plot for valid and invalid
     lineplot = sns.lineplot(
-        data=df,
+        data=df_valid,
         x='temperature',
-        y='percentage',
+        y='total_percentage',
         hue='model_name',
         style='model_name',
         markers=True,
