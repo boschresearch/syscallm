@@ -54,9 +54,9 @@ def process_json_file(file_path):
         output_path = file_path.replace("/json/", "/json_filtered/")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        # write the modified data back to the file
-        with open(output_path, 'w') as file:
-            json.dump(data, file, indent=4)
+    # write the modified data back to the file
+    with open(output_path, 'w') as file:
+        json.dump(data, file, indent=4)
 
 
 def process_all_json(directory):
