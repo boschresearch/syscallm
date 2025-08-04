@@ -10,6 +10,7 @@ total_syscall_count = 345
 # file paths
 data_dir = "/home/jom8be/workspace/syscallm/data"
 json_dir = os.path.join(data_dir, "json", mode)
+json_filtered_dir = os.path.join(data_dir, "json_filtered", mode)
 strace_dir = os.path.join(data_dir, "strace", mode)
 config_dir = os.path.join(data_dir, "config", mode)
 config_random_uniform_dir = os.path.join(data_dir, "config_random_uniform", mode)

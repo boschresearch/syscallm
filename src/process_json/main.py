@@ -11,6 +11,7 @@ import utils.config as config
 
 data_dir = config.data_dir
 json_dir = config.json_dir
+json_filtered_dir = config.json_filtered_dir
 strace_dir = config.strace_dir
 config_dir = config.config_dir
 config_random_uniform_dir = config.config_random_uniform_dir
@@ -28,6 +29,7 @@ if __name__ == "__main__":
 
     # directories to remove if they exist
     dirs_to_remove = [
+        json_filtered_dir,
         strace_dir,
         config_dir,
         config_random_uniform_dir,
