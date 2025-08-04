@@ -25,7 +25,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     aut = args.aut
-    print(f"Running in {mode} mode for {aut}")
+    print(f" * Running in {mode} mode for {aut}")
 
     # directories to remove if they exist
     dirs_to_remove = [
@@ -43,7 +43,8 @@ if __name__ == "__main__":
     print("1. Processing JSON files that have out of bound values...")
     filter_out_of_bound.process_all_temperatures(directory=json_dir)
 
-    # inject_what.process_all_models(json_dir_path, mode)
+    print("2. Converting JSON files to strace commands...")
+    inject_what.process_all_temperatures(directory=json_filtered_dir)
     # filter_strace.process_all_models(strace_dir_path, aut)
     # inject_when.process_all_models(strace_dir_path, aut)
     # strace_to_config.process_all_models(strace_dir_path)
