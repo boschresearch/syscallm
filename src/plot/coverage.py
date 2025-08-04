@@ -244,16 +244,18 @@ if __name__ == "__main__":
     out_bound = df_plot['out_of_bound_percentage'].values
     in_bound = df_plot['in_bound_percentage'].values
 
-    # stack: empty at bottom, then out_of_bound, then all_out_of_bound, then in_bound
-    plt.bar(x, not_usable, bar_width, label='Not Usable', color='lightgray')
-    plt.bar(x, out_bound, bar_width, bottom=not_usable, label='OOB-Fixable', color='salmon')
-    plt.bar(x, in_bound, bar_width, bottom=not_usable + out_bound, label='In-Bounds', color='skyblue')
+    # stack: in_bound at bottom, then out_of_bound, then not_usable at top
+    plt.bar(x, in_bound, bar_width, label='In-Bounds', color='skyblue')
+    plt.bar(x, out_bound, bar_width, bottom=in_bound, label='OOB-Fixable', color='gold')
+    plt.bar(x, not_usable, bar_width, bottom=in_bound + out_bound, label='Not Usable', color='salmon')
 
     for i, val in enumerate(not_usable):
-        if val > 0 and val < 1:  # very small but non-zero
+        if val > 0:
+            # Calculate the top of the stacked bar
+            bar_top = in_bound[i] + out_bound[i] + val
             plt.text(
                 x[i],
-                val + 0.5,  # offset a bit above zero
+                bar_top + 0.5,  # slightly above the top
                 f'{val:.1f}%\nNot Usable',
                 ha='center',
                 va='bottom',
@@ -263,7 +265,7 @@ if __name__ == "__main__":
     # x ticks and labels
     plt.xticks(x, temp_labels, fontsize=11)
     plt.ylabel('Percentage (%)', fontsize=13)
-    plt.ylim(0, 101)
+    plt.ylim(0, 110)
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
     plt.yticks(range(0, 101, 10))
     plt.legend(fontsize=13)
