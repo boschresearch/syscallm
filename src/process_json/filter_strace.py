@@ -1,6 +1,8 @@
 import os
 import argparse
-import app_syscalls
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.app_syscalls as app_syscalls
 
 def delete_file(file_path):
     """Delete a file."""

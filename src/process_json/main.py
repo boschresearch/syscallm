@@ -1,10 +1,10 @@
 import os
-import process.inject_what as inject_what
-import process.filter_strace as filter_strace
-import process.inject_when as inject_when
-import process.strace_to_config as strace_to_config
-import process.random_config as random_config
 import argparse
+import inject_what as inject_what
+import filter_strace as filter_strace
+import inject_when as inject_when
+import strace_to_config as strace_to_config
+import random_config as random_config
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process JSON files to generate the faultload.")

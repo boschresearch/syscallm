@@ -1,7 +1,9 @@
 import os
 import json
-from utils import is_json
 import argparse
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.utils as utils
 
 def write_list_to_file(file_path, list_of_strings):
     with open(file_path, 'w') as file:
@@ -48,7 +50,7 @@ def process_run_directory(run_dir_path, mode):
     """Process all JSON files in a run directory."""
     for filename in os.listdir(run_dir_path):
         json_file_path = os.path.join(run_dir_path, filename)
-        if filename.endswith(".json") and is_json(json_file_path):
+        if filename.endswith(".json") and utils.is_json(json_file_path):
             process_json_file(json_file_path, mode)
 
 
