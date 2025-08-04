@@ -211,12 +211,7 @@ if __name__ == "__main__":
     # add percentage
     df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
     df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
-
-    # prepare data for stacked bar plot
     df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage']
-
-    # set up the plot
-    plt.figure(figsize=(10, 6))
 
     # pivot data for easier plotting
     df_plot = df_valid.pivot_table(
@@ -224,16 +219,19 @@ if __name__ == "__main__":
         values=['in_bound_percentage', 'out_of_bound_percentage'],
         aggfunc='mean'
     ).reset_index()
+    
+    # set up the plot
+    plt.figure(figsize=(8, 6))
 
     # bar width and positions
-    bar_width = 0.35
+    bar_width = 0.4
     n_temps = len(temperature)
     x = []
-    labels = []
+    temp_labels = []
     for i, model in enumerate(models):
         for j, temp in enumerate(temperature):
             x.append(i * (n_temps + 1) + j)
-            labels.append(f"{model}\n{temp}")
+            temp_labels.append(temp)
 
     # plot bars
     in_bound = df_plot['in_bound_percentage'].values
@@ -243,14 +241,31 @@ if __name__ == "__main__":
     plt.bar(x, out_bound, bar_width, bottom=in_bound, label='Out of Bound', color='salmon')
 
     # x ticks and labels
-    plt.xticks(x, labels, rotation=45, ha='right', fontsize=12)
-    plt.xlabel('Model & Temperature', fontsize=16)
-    plt.ylabel('Total Percentage (%)', fontsize=16)
+    plt.xticks(x, temp_labels, fontsize=11)
+    plt.ylabel('Percentage (%)', fontsize=13)
     plt.ylim(0, 100)
-    plt.legend(fontsize=12)
-    plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
+    plt.legend(fontsize=13)
 
+    # Add model labels beneath groups
+    group_width = n_temps + 1
+    midpoints = [i * group_width + (n_temps - 1) / 2 for i in range(len(models))]
+
+    for i, model in enumerate(models):
+        plt.text(
+            midpoints[i],
+            -7,  # Adjust for spacing
+            model,
+            ha='center',
+            va='top',
+            fontsize=11,
+            transform=plt.gca().transData
+        )
+
+    # Leave space for model labels
+    plt.tight_layout(rect=[0, 0.08, 1, 1])
+
+    # Save figure
     plt.savefig(f"figures/coverage_{mode}.png", dpi=300)
 
     # figure size
