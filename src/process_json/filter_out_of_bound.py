@@ -43,6 +43,10 @@ def process_json_file(file_path):
         # filter out of bound values
         filtered_values = filter_out_of_bound_values(values)
 
+        # if no values are left after filtering, skip writing the file
+        if not filtered_values:
+            return
+
         # replace the values in the data
         set_llm_generated_values(data, filtered_values)
 
