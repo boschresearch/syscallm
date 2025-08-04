@@ -1,10 +1,10 @@
 import os
 import argparse
-import inject_what as inject_what
-import filter_strace as filter_strace
-import inject_when as inject_when
-import strace_to_config as strace_to_config
-import random_config as random_config
+import inject_what
+import filter_strace
+import inject_when
+import strace_to_config
+import random_config
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
