@@ -217,12 +217,13 @@ if __name__ == "__main__":
                 df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'total_count': [len(valid)], 'not_usable_count': [len(valid_empty) + len(valid_all_out_of_bound)], 'out_of_bound_count': [len(valid_out_of_bound)], 'temperature': [temp]})], ignore_index=True)
 
                 # add total count of invalid
+                n = 2
                 df_invalid = pd.DataFrame({
-                    'model_name': [model] * 3,
-                    'run': [run] * 3,
-                    'count': [len(valid_out_of_bound), len(invalid_stuck_in_loop), len(invalid_token_size_too_small)],
-                    'temperature': [temp] * 3,
-                    'invalid_type': ['valid_out_of_bound', 'invalid_stuck_in_loop', 'invalid_token_size_too_small']
+                    'model_name': [model] * n,
+                    'run': [run] * n,
+                    'count': [len(invalid_stuck_in_loop), len(invalid_token_size_too_small)],
+                    'temperature': [temp] * n,
+                    'invalid_type': ['invalid_stuck_in_loop', 'invalid_token_size_too_small']
                 })
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
