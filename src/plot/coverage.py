@@ -225,20 +225,13 @@ if __name__ == "__main__":
         aggfunc='mean'
     ).reset_index()
 
-    # sort for consistent plotting
-    df_plot = df_plot.sort_values(['model_name', 'temperature'])
-
-    # get unique models and temperatures
-    models_sorted = df_plot['model_name'].unique()
-    temps_sorted = sorted(df_plot['temperature'].unique())
-
     # bar width and positions
     bar_width = 0.35
-    n_temps = len(temps_sorted)
+    n_temps = len(temperature)
     x = []
     labels = []
-    for i, model in enumerate(models_sorted):
-        for j, temp in enumerate(temps_sorted):
+    for i, model in enumerate(models):
+        for j, temp in enumerate(temperature):
             x.append(i * (n_temps + 1) + j)
             labels.append(f"{model}\n{temp}")
 
