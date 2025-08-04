@@ -23,10 +23,10 @@ data_dir = config.data_dir
 
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
-    valid_empty, valid_out_of_bound, valid_all_out_of_bound = categorize_valid(valid, json_dir)
+    valid_empty, valid_all_out_of_bound, valid_out_of_bound = categorize_valid(valid, json_dir)
     invalid_stuck_in_loop, invalid_token_size_too_small = categorize_invalid(invalid, json_dir)
 
-    return valid, valid_empty, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
+    return valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
 
 
 def categorize_valid_invalid(json_dir):
@@ -94,18 +94,12 @@ def categorize_valid(valid, json_dir):
             
             if is_empty(llm_generated_values):
                 valid_empty.append(filename)
-                continue
-
-            out_of_bound = is_out_of_bound(llm_generated_values)
-            all_out_of_bound = is_all_out_of_bound(llm_generated_values)
-            
-            if out_of_bound:
+            elif is_all_out_of_bound(llm_generated_values):
+                valid_all_out_of_bound.append(filename)
+            elif is_out_of_bound(llm_generated_values):
                 valid_out_of_bound.append(filename)
 
-            if all_out_of_bound:
-                valid_all_out_of_bound.append(filename)
-
-    return valid_empty, valid_out_of_bound, valid_all_out_of_bound
+    return valid_empty, valid_all_out_of_bound, valid_out_of_bound
 
 
 def extract_llm_generated_values(string: str):
@@ -202,9 +196,9 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, valid_empty, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
+                valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
 
-                df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'total_count': [len(valid)], 'empty_count': [len(valid_empty)], 'out_of_bound_count': [len(valid_out_of_bound)], 'temperature': [temp]})], ignore_index=True)
+                df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'total_count': [len(valid)], 'not_usable_count': [len(valid_empty) + len(valid_all_out_of_bound)], 'out_of_bound_count': [len(valid_out_of_bound)], 'temperature': [temp]})], ignore_index=True)
 
                 # add total count of invalid
                 df_invalid = pd.DataFrame({
@@ -221,14 +215,14 @@ if __name__ == "__main__":
 
     # add percentage
     df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
-    df_valid['empty_percentage'] = (df_valid['empty_count'] / total_syscall_count) * 100
+    df_valid['not_usable_percentage'] = (df_valid['not_usable_count'] / total_syscall_count) * 100
     df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
-    df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage']
+    df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage'] - df_valid['not_usable_percentage']
 
-    # pivot data for easier plotting, include empty_percentage
+    # pivot data for easier plotting, include empty_percentage and all_out_of_bound_percentage
     df_plot = df_valid.pivot_table(
         index=['model_name', 'temperature'],
-        values=['in_bound_percentage', 'out_of_bound_percentage', 'empty_percentage'],
+        values=['in_bound_percentage', 'out_of_bound_percentage', 'not_usable_percentage'],
         aggfunc='mean'
     ).reset_index()
     
@@ -246,21 +240,21 @@ if __name__ == "__main__":
             temp_labels.append(temp)
 
     # plot bars
-    empty = df_plot['empty_percentage'].values
+    not_usable = df_plot['not_usable_percentage'].values
     out_bound = df_plot['out_of_bound_percentage'].values
     in_bound = df_plot['in_bound_percentage'].values
 
-    # stack: empty at bottom, then out_of_bound, then in_bound
-    plt.bar(x, empty, bar_width, label='Empty', color='lightgray')
-    plt.bar(x, out_bound, bar_width, bottom=empty, label='Out of Bound', color='salmon')
-    plt.bar(x, in_bound, bar_width, bottom=empty + out_bound, label='In Bound', color='skyblue')
+    # stack: empty at bottom, then out_of_bound, then all_out_of_bound, then in_bound
+    plt.bar(x, not_usable, bar_width, label='Not Usable', color='lightgray')
+    plt.bar(x, out_bound, bar_width, bottom=not_usable, label='OOB-Fixable', color='salmon')
+    plt.bar(x, in_bound, bar_width, bottom=not_usable + out_bound, label='In-Bounds', color='skyblue')
 
-    for i, val in enumerate(empty):
+    for i, val in enumerate(not_usable):
         if val > 0 and val < 1:  # very small but non-zero
             plt.text(
                 x[i],
                 val + 0.5,  # offset a bit above zero
-                f'{val:.1f}%\nEmpty',
+                f'{val:.1f}%\nNot Usable',
                 ha='center',
                 va='bottom',
                 fontsize=10
