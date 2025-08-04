@@ -5,6 +5,16 @@ import filter_strace as filter_strace
 import inject_when as inject_when
 import strace_to_config as strace_to_config
 import random_config as random_config
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.config as config
+
+data_dir = config.data_dir
+json_dir = config.json_dir
+strace_dir = config.strace_dir
+config_dir = config.config_dir
+config_random_uniform_dir = config.config_random_uniform_dir
+config_random_log_dir = config.config_random_log_dir
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process JSON files to generate the errorload.")
@@ -16,17 +26,12 @@ if __name__ == "__main__":
     aut = args.aut
     print(f"Running in {mode} mode for {aut}")
 
-    data_dir_path = os.path.abspath(os.path.join(os.getcwd(), "..", "data"))
-    json_dir_path = os.path.join(data_dir_path, "json", mode)
-    strace_dir_path = os.path.join(data_dir_path, "strace", mode)
-    config_dir_path = os.path.join(data_dir_path, "config", mode)
-
-    # Directories to remove if they exist
+    # directories to remove if they exist
     dirs_to_remove = [
-        strace_dir_path,
-        config_dir_path,
-        os.path.join(data_dir_path, "config_random_uniform", mode),
-        os.path.join(data_dir_path, "config_random_log", mode),
+        strace_dir,
+        config_dir,
+        config_random_uniform_dir,
+        config_random_log_dir,
     ]
 
     for dir_path in dirs_to_remove:
