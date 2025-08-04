@@ -4,7 +4,6 @@ import json
 import errno
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from collections import Counter
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
