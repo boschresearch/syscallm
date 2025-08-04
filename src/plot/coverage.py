@@ -320,7 +320,7 @@ if __name__ == "__main__":
     plt.savefig(f"figures/coverage_{mode}.png", dpi=300)
 
     # figure size
-    plt.figure(figsize=(6, 4))
+    plt.figure(figsize=(3, 3))
 
     # calculate percentage for each invalid type
     df_invalid_all['percentage'] = (df_invalid_all['count'] / total_syscall_count) * 100
@@ -334,12 +334,12 @@ if __name__ == "__main__":
         col='model_name',
         kind='bar',
         palette='mako',
-        height=4,
-        aspect=1
+        aspect=1,
+        width=0.3
     )
 
     # plot parameters
-    g.set_axis_labels('Temperature', 'Invalid Percentage (%)')
+    g.set_axis_labels(None, 'Invalid Percentage (%)')
     g.set_titles('{col_name}')
     g.set(ylim=(0, 100))
     g.set_xticklabels(size=15)
@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
     for ax in g.axes.flatten():
         ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
-        # Add percentage labels on top of each bar
+        # add percentage labels on top of each bar
         for bar in ax.containers:
             for rect in bar:
                 height = rect.get_height()
