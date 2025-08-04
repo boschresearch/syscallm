@@ -237,8 +237,9 @@ if __name__ == "__main__":
     in_bound = df_plot['in_bound_percentage'].values
     out_bound = df_plot['out_of_bound_percentage'].values
 
-    plt.bar(x, in_bound, bar_width, label='In Bound', color='skyblue')
-    plt.bar(x, out_bound, bar_width, bottom=in_bound, label='Out of Bound', color='salmon')
+    # stack out_of_bound first, then in_bound on top
+    plt.bar(x, out_bound, bar_width, label='Out of Bound', color='salmon')
+    plt.bar(x, in_bound, bar_width, bottom=out_bound, label='In Bound', color='skyblue')
 
     # x ticks and labels
     plt.xticks(x, temp_labels, fontsize=11)
