@@ -23,8 +23,8 @@ data_dir = config.data_dir
 
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
-    valid_out_of_bound, valid_all_out_of_bound = find_valid_out_of_bound(valid, json_dir)
-    invalid_stuck_in_loop, invalid_token_size_too_small = find_why_invalid(invalid, json_dir)
+    valid_out_of_bound, valid_all_out_of_bound = categorize_valid(valid, json_dir)
+    invalid_stuck_in_loop, invalid_token_size_too_small = categorize_invalid(invalid, json_dir)
 
     return valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
 
@@ -47,7 +47,7 @@ def categorize_valid_invalid(json_dir):
     return valid, invalid
 
 
-def find_why_invalid(invalid, json_dir):
+def categorize_invalid(invalid, json_dir):
     invalid_stuck_in_loop = []
     invalid_token_size_too_small = []
 
@@ -76,7 +76,7 @@ def find_why_invalid(invalid, json_dir):
     return invalid_stuck_in_loop, invalid_token_size_too_small
 
 
-def find_valid_out_of_bound(valid, json_dir):
+def categorize_valid(valid, json_dir):
     valid_out_of_bound = []
     valid_all_out_of_bound = []
 
