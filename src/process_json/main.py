@@ -7,7 +7,7 @@ import strace_to_config as strace_to_config
 import random_config as random_config
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process JSON files to generate the faultload.")
+    parser = argparse.ArgumentParser(description="Process JSON files to generate the errorload.")
     parser.add_argument("--mode", type=str, required=True, help="Fault injection mode (e.g., 'error_code', 'success')")
     parser.add_argument("--aut", type=str, required=True, help="Application under test (e.g., 'redis', 'sha256')")
     args = parser.parse_args()
