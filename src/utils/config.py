@@ -1,5 +1,5 @@
 runs = 5
-models = ["Qwen2.5-7B-Instruct", "QwQ-32B-Preview", "Qwen2.5-32B-Instruct", "gpt-4o"]
+models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
 temperature = ["0.3", "0.5", "0.7"]
 mode = "success"
 # mode = "error_code"
