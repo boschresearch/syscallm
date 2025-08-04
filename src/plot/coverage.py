@@ -227,7 +227,7 @@ if __name__ == "__main__":
     ).reset_index()
     
     # set up the plot
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(7, 5))
 
     # bar width and positions
     bar_width = 0.4
@@ -279,7 +279,7 @@ if __name__ == "__main__":
             model,
             ha='center',
             va='top',
-            fontsize=11,
+            fontsize=12,
             transform=plt.gca().transData
         )
 
