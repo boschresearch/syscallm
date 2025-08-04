@@ -23,10 +23,10 @@ data_dir = config.data_dir
 
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
-    valid_out_of_bound = find_valid_out_of_bound(valid, json_dir)
+    valid_out_of_bound, valid_all_out_of_bound = find_valid_out_of_bound(valid, json_dir)
     invalid_stuck_in_loop, invalid_token_size_too_small = find_why_invalid(invalid, json_dir)
 
-    return valid, invalid, valid_out_of_bound, invalid_stuck_in_loop, invalid_token_size_too_small
+    return valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
 
 
 def categorize_valid_invalid(json_dir):
@@ -78,6 +78,7 @@ def find_why_invalid(invalid, json_dir):
 
 def find_valid_out_of_bound(valid, json_dir):
     valid_out_of_bound = []
+    valid_all_out_of_bound = []
 
     for filename in valid:
         filepath = os.path.join(json_dir, filename + '.json')
@@ -91,11 +92,15 @@ def find_valid_out_of_bound(valid, json_dir):
                 llm_generated_values = content["error_codes"]
             
             out_of_bound = is_out_of_bound(llm_generated_values)
+            all_out_of_bound = is_all_out_of_bound(llm_generated_values)
             
             if out_of_bound:
                 valid_out_of_bound.append(filename)
 
-    return valid_out_of_bound
+            if all_out_of_bound:
+                valid_all_out_of_bound.append(filename)
+
+    return valid_out_of_bound, valid_all_out_of_bound
 
 
 def extract_llm_generated_values(string: str):
@@ -158,6 +163,14 @@ def is_out_of_bound(values: list):
     return False
 
 
+def is_all_out_of_bound(values: list):
+    if mode == "success":
+        return all(v < 0 or v > 18446744073709551615 for v in values)
+    elif mode == "error_code":
+        return all(not hasattr(errno, v) for v in values)
+    return False
+
+
 def is_token_size_too_small_gpt(string: str):
     if string.startswith("LengthFinishReasonError"):
         return True
@@ -178,7 +191,7 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, invalid, valid_out_of_bound, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
+                valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
@@ -193,7 +206,7 @@ if __name__ == "__main__":
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
 
-                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Out of Bound: {valid_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
     # figure size
     plt.figure(figsize=(5, 4))
