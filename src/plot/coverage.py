@@ -1,25 +1,32 @@
 import os
 import re
+import json
 import errno
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
-from utils import is_json
-import config
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.utils as utils
+import utils.config as config
 
 plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
 models = config.models
+temperature = config.temperature
 mode = config.mode
+total_syscall_count = config.total_syscall_count
+data_dir = config.data_dir
 
 
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
-    invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small = find_why_invalid(invalid, json_dir)
+    valid_out_of_bound, valid_all_out_of_bound = find_valid_out_of_bound(valid, json_dir)
+    invalid_stuck_in_loop, invalid_token_size_too_small = find_why_invalid(invalid, json_dir)
 
-    return valid, invalid, invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small
+    return valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
 
 
 def categorize_valid_invalid(json_dir):
@@ -32,7 +39,7 @@ def categorize_valid_invalid(json_dir):
         if os.path.isfile(file_path) and file_path.endswith('.json'):
             man_page = filename.split('.json')[0]
 
-            if is_json(file_path):
+            if utils.is_json(file_path):
                 valid.append(man_page)
             else:
                 invalid.append(man_page)
@@ -42,7 +49,6 @@ def categorize_valid_invalid(json_dir):
 
 def find_why_invalid(invalid, json_dir):
     invalid_stuck_in_loop = []
-    invalid_out_of_bound = []
     invalid_token_size_too_small = []
 
     model_name = os.path.basename(os.path.dirname(json_dir))
@@ -61,18 +67,40 @@ def find_why_invalid(invalid, json_dir):
             llm_generated_values = extract_llm_generated_values(content)
 
             stuck = is_stuck_in_loop(llm_generated_values)
-            out_of_bound = is_out_of_bound(llm_generated_values)
 
             if stuck:
                 invalid_stuck_in_loop.append(filename)
-            
-            if out_of_bound:
-                invalid_out_of_bound.append(filename)
-
-            if not stuck and not out_of_bound:
+            else:
                 invalid_token_size_too_small.append(filename)
 
-    return invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small
+    return invalid_stuck_in_loop, invalid_token_size_too_small
+
+
+def find_valid_out_of_bound(valid, json_dir):
+    valid_out_of_bound = []
+    valid_all_out_of_bound = []
+
+    for filename in valid:
+        filepath = os.path.join(json_dir, filename + '.json')
+
+        with open(filepath, 'r') as f:
+            content = json.load(f)
+
+            if mode == "success":
+                llm_generated_values = content["test_values"]
+            elif mode == "error_code":
+                llm_generated_values = content["error_codes"]
+            
+            out_of_bound = is_out_of_bound(llm_generated_values)
+            all_out_of_bound = is_all_out_of_bound(llm_generated_values)
+            
+            if out_of_bound:
+                valid_out_of_bound.append(filename)
+
+            if all_out_of_bound:
+                valid_all_out_of_bound.append(filename)
+
+    return valid_out_of_bound, valid_all_out_of_bound
 
 
 def extract_llm_generated_values(string: str):
@@ -86,11 +114,10 @@ def get_test_values(string: str):
     match = re.search(r'"test_values"\s*:\s*\[([^\]]*)\]?', string)
 
     if match:
-        # extract the test values substring
         values_str = match.group(1)
-
         try:
-            values = [int(v.strip()) for v in values_str.split(',') if v.strip().isdigit()]
+            # match integers including negative values
+            values = [int(v) for v in re.findall(r'-?\d+', values_str)]
         except ValueError as e:
             print(f"Error extracting test values: {e}")
             values = []
@@ -136,6 +163,14 @@ def is_out_of_bound(values: list):
     return False
 
 
+def is_all_out_of_bound(values: list):
+    if mode == "success":
+        return all(v < 0 or v > 18446744073709551615 for v in values)
+    elif mode == "error_code":
+        return all(not hasattr(errno, v) for v in values)
+    return False
+
+
 def is_token_size_too_small_gpt(string: str):
     if string.startswith("LengthFinishReasonError"):
         return True
@@ -143,14 +178,11 @@ def is_token_size_too_small_gpt(string: str):
 
 
 if __name__ == "__main__":
-    # directory to all json data
-    data_dir = os.path.abspath(os.path.join(os.getcwd(), "data", "json", mode))
-
     # directories json data for each temperature
-    temperature = ["0.3", "0.5", "0.7"]
-    temperature_dirs = [os.path.join(data_dir, f"temperature_{temp}") for temp in temperature]
+    temperature_dirs = [os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature]
 
     df = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
+    df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
 
     for temp_dir, temp in zip(temperature_dirs, temperature):
         for model in models:
@@ -159,34 +191,28 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, invalid, invalid_stuck_in_loop, invalid_out_of_bound, invalid_token_size_too_small = categorize(json_dir)
+                valid, valid_out_of_bound, valid_all_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
 
                 df = pd.concat([df, pd.DataFrame({'model_name': [model], 'run': [run], 'count': [len(valid)], 'temperature': [temp]})], ignore_index=True)
 
-                # TODO: add total count of invalid
+                # add total count of invalid
                 df_invalid = pd.DataFrame({
                     'model_name': [model] * 3,
                     'run': [run] * 3,
-                    'count': [len(invalid_stuck_in_loop), len(invalid_out_of_bound), len(invalid_token_size_too_small)],
+                    'count': [len(valid_out_of_bound), len(invalid_stuck_in_loop), len(invalid_token_size_too_small)],
                     'temperature': [temp] * 3,
-                    'invalid_type': ['stuck_in_loop', 'out_of_bound', 'token_size_too_small']
+                    'invalid_type': ['valid_out_of_bound', 'invalid_stuck_in_loop', 'invalid_token_size_too_small']
                 })
-
-                if 'df_invalid_all' not in locals():
-                    df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
 
-                # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Out of Bound: {invalid_out_of_bound},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
-
-    # total number of syscalls
-    total_count = 345
+                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
 
     # figure size
     plt.figure(figsize=(5, 4))
 
     # add percentage
-    df['percentage'] = (df['count'] / total_count) * 100
+    df['percentage'] = (df['count'] / total_syscall_count) * 100
 
     # calculate average percentage per model and temperature
     avg_percentage = df.groupby(['model_name', 'temperature'])['percentage'].mean()
@@ -221,19 +247,19 @@ if __name__ == "__main__":
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
     plt.ylim(0, 100)
-    plt.legend(fontsize=13, loc='upper right', bbox_to_anchor=(1, 0.45))
+    plt.legend(fontsize=9, loc='upper right', bbox_to_anchor=(1, 0.3))
     plt.tight_layout()
     plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
 
-    plt.savefig(f"figures/coverage_{mode}.png")
+    plt.savefig(f"figures/coverage_{mode}.png", dpi=300)
 
     # figure size
     plt.figure(figsize=(6, 4))
 
     # calculate percentage for each invalid type
-    df_invalid_all['percentage'] = (df_invalid_all['count'] / total_count) * 100
+    df_invalid_all['percentage'] = (df_invalid_all['count'] / total_syscall_count) * 100
 
-    # category plot for invalid causes
+    # category plot for invalid causes including total invalid
     g = sns.catplot(
         data=df_invalid_all,
         x='temperature',
@@ -252,9 +278,23 @@ if __name__ == "__main__":
     g.set(ylim=(0, 100))
     g.set_xticklabels(size=15)
     g.set_yticklabels(size=15)
+    g._legend.set_title(None)
     g.tight_layout()
 
     for ax in g.axes.flatten():
         ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
+        # Add percentage labels on top of each bar
+        for bar in ax.containers:
+            for rect in bar:
+                height = rect.get_height()
+                if height > 0:
+                    ax.text(
+                        rect.get_x() + rect.get_width() / 2,
+                        height,
+                        f'{height:.1f}%',
+                        ha='center',
+                        va='bottom',
+                        fontsize=8
+                    )
 
-    plt.savefig(f"figures/coverage_invalid_causes_{mode}.png")
+    plt.savefig(f"figures/coverage_invalid_causes_{mode}.png", dpi=300)
