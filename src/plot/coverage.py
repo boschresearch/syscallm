@@ -20,6 +20,8 @@ mode = config.mode
 total_syscall_count = config.total_syscall_count
 data_dir = config.data_dir
 
+hallucinatory_error_codes = {model: [] for model in models}
+
 
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
@@ -83,6 +85,7 @@ def categorize_valid(valid, json_dir):
 
     for filename in valid:
         filepath = os.path.join(json_dir, filename + '.json')
+        model = os.path.basename(os.path.dirname(json_dir))
 
         with open(filepath, 'r') as f:
             content = json.load(f)
@@ -98,6 +101,9 @@ def categorize_valid(valid, json_dir):
                 valid_all_out_of_bound.append(filename)
             elif is_out_of_bound(llm_generated_values):
                 valid_out_of_bound.append(filename)
+
+            if mode == "error_code":
+                update_hallucinatory_error_codes(model, llm_generated_values)
 
     return valid_empty, valid_all_out_of_bound, valid_out_of_bound
 
@@ -182,6 +188,16 @@ def is_token_size_too_small_gpt(string: str):
     return False
 
 
+def update_hallucinatory_error_codes(model, llm_generated_values):
+    global hallucinatory_error_codes
+
+    counters = dict(hallucinatory_error_codes[model])
+    for v in llm_generated_values:
+        if not hasattr(errno, v):
+            counters[v] = counters.get(v, 0) + 1
+    hallucinatory_error_codes[model] = list(counters.items())
+
+
 if __name__ == "__main__":
     # directories json data for each temperature
     temperature_dirs = [os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature]
@@ -211,7 +227,17 @@ if __name__ == "__main__":
 
                 df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
 
-                print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Empty: {valid_empty}\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+                # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Empty: {valid_empty}\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+
+    print("Hallucinatory Error Codes:")
+    for model, codes in hallucinatory_error_codes.items():
+        # sort codes by count descending
+        sorted_codes = sorted(codes, key=lambda x: x[1], reverse=True)
+        top_10 = sorted_codes[:10]
+        print(f"Model: {model}, Top 10 Hallucinatory Error Codes:")
+        for code, count in top_10:
+            print(f"  {code}: {count}")
+        print()
 
     # add percentage
     df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
