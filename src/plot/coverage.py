@@ -26,9 +26,9 @@ hallucinatory_error_codes = {model: [] for model in models}
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
     valid_empty, valid_all_out_of_bound, valid_out_of_bound = categorize_valid(valid, json_dir)
-    invalid_stuck_in_loop, invalid_token_size_too_small = categorize_invalid(invalid, json_dir)
+    invalid_loop, invalid_enumeration = categorize_invalid(invalid, json_dir)
 
-    return valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small
+    return valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration
 
 
 def categorize_valid_invalid(json_dir):
@@ -50,8 +50,8 @@ def categorize_valid_invalid(json_dir):
 
 
 def categorize_invalid(invalid, json_dir):
-    invalid_stuck_in_loop = []
-    invalid_token_size_too_small = []
+    invalid_loop = []
+    invalid_enumeration = []
 
     model_name = os.path.basename(os.path.dirname(json_dir))
 
@@ -62,20 +62,20 @@ def categorize_invalid(invalid, json_dir):
             content = f.read()
 
             if model_name.startswith("gpt-4"):
-                if is_token_size_too_small_gpt(content):
-                    invalid_token_size_too_small.append(filename)
+                if is_enumeration_gpt(content):
+                    invalid_enumeration.append(filename)
                     continue
 
             llm_generated_values = extract_llm_generated_values(content)
 
-            stuck = is_stuck_in_loop(llm_generated_values)
+            loop = is_loop(llm_generated_values)
 
-            if stuck:
-                invalid_stuck_in_loop.append(filename)
+            if loop:
+                invalid_loop.append(filename)
             else:
-                invalid_token_size_too_small.append(filename)
+                invalid_enumeration.append(filename)
 
-    return invalid_stuck_in_loop, invalid_token_size_too_small
+    return invalid_loop, invalid_enumeration
 
 
 def categorize_valid(valid, json_dir):
@@ -153,7 +153,7 @@ def find_duplicated(values):
     return [item for item, count in counts.items() if count >= threshold]
 
 
-def is_stuck_in_loop(values: list):
+def is_loop(values: list):
     if find_duplicated(values):
         return True
     else:
@@ -182,7 +182,7 @@ def is_all_out_of_bound(values: list):
     return False
 
 
-def is_token_size_too_small_gpt(string: str):
+def is_enumeration_gpt(string: str):
     if string.startswith("LengthFinishReasonError"):
         return True
     return False
@@ -202,8 +202,8 @@ if __name__ == "__main__":
     # directories json data for each temperature
     temperature_dirs = [os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature]
 
-    df_valid = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature'])
-    df_invalid_all = pd.DataFrame(columns=['model_name', 'run', 'count', 'temperature', 'invalid_type'])
+    df_valid = pd.DataFrame(columns=['model_name', 'run', 'temperature', 'total_count', 'not_usable_count', 'out_of_bound_count'])
+    df_invalid = pd.DataFrame(columns=['model_name', 'run', 'temperature', 'loop_count', 'enumeration_count'])
 
     for temp_dir, temp in zip(temperature_dirs, temperature):
         for model in models:
@@ -212,23 +212,12 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_stuck_in_loop, invalid_token_size_too_small = categorize(json_dir)
+                valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration = categorize(json_dir)
 
-                df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'total_count': [len(valid)], 'not_usable_count': [len(valid_empty) + len(valid_all_out_of_bound)], 'out_of_bound_count': [len(valid_out_of_bound)], 'temperature': [temp]})], ignore_index=True)
+                df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'temperature': [temp], 'total_count': [len(valid)], 'not_usable_count': [len(valid_empty) + len(valid_all_out_of_bound)], 'out_of_bound_count': [len(valid_out_of_bound)]})], ignore_index=True)
+                df_invalid = pd.concat([df_invalid, pd.DataFrame({'model_name': [model], 'run': [run], 'temperature': [temp], 'loop_count': [len(invalid_loop)], 'enumeration_count': [len(invalid_enumeration)]})], ignore_index=True)
 
-                # add total count of invalid
-                n = 2
-                df_invalid = pd.DataFrame({
-                    'model_name': [model] * n,
-                    'run': [run] * n,
-                    'count': [len(invalid_stuck_in_loop), len(invalid_token_size_too_small)],
-                    'temperature': [temp] * n,
-                    'invalid_type': ['invalid_stuck_in_loop', 'invalid_token_size_too_small']
-                })
-
-                df_invalid_all = pd.concat([df_invalid_all, df_invalid], ignore_index=True)
-
-                # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Empty: {valid_empty}\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid Stuck in Loop: {invalid_stuck_in_loop},\nInvalid Token Size Too Small: {invalid_token_size_too_small}\n")
+                # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Empty: {valid_empty}\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid in Loop: {invalid_loop},\nInvalid Token Size Too Small: {invalid_enumeration}\n")
 
     if mode == "error_code":
         print("Hallucinatory Error Codes:")
@@ -246,14 +235,26 @@ if __name__ == "__main__":
     df_valid['not_usable_percentage'] = (df_valid['not_usable_count'] / total_syscall_count) * 100
     df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
     df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage'] - df_valid['not_usable_percentage']
+    df_invalid['loop_percentage'] = (df_invalid['loop_count'] / total_syscall_count) * 100
+    df_invalid['enumeration_percentage'] = (df_invalid['enumeration_count'] / total_syscall_count) * 100
 
     # pivot data for easier plotting, include empty_percentage and all_out_of_bound_percentage
-    df_plot = df_valid.pivot_table(
+    df_valid_pivot = df_valid.pivot_table(
         index=['model_name', 'temperature'],
         values=['in_bound_percentage', 'out_of_bound_percentage', 'not_usable_percentage'],
         aggfunc='mean'
     ).reset_index()
+
+    # pivot to get counts per invalid_type as columns
+    df_invalid_pivot = df_invalid.pivot_table(
+        index=['model_name', 'temperature'],
+        values=['loop_percentage', 'enumeration_percentage'],
+        aggfunc='mean'
+    ).reset_index()
+    df_invalid_pivot = df_invalid_pivot.infer_objects(copy=False).fillna(0)
     
+    ################################################# PLOT VALID COVERAGE #################################################
+
     # set up the plot
     plt.figure(figsize=(7, 5))
 
@@ -268,22 +269,22 @@ if __name__ == "__main__":
             temp_labels.append(temp)
 
     # plot bars
-    not_usable = df_plot['not_usable_percentage'].values
-    out_bound = df_plot['out_of_bound_percentage'].values
-    in_bound = df_plot['in_bound_percentage'].values
+    not_usable = df_valid_pivot['not_usable_percentage'].values
+    out_of_bound = df_valid_pivot['out_of_bound_percentage'].values
+    in_bound = df_valid_pivot['in_bound_percentage'].values
 
     # stack: in_bound at bottom, then out_of_bound, then not_usable at top
     plt.bar(x, in_bound, bar_width, label='In-Bounds', color='skyblue')
-    plt.bar(x, out_bound, bar_width, bottom=in_bound, label='OOB-Fixable', color='gold')
-    plt.bar(x, not_usable, bar_width, bottom=in_bound + out_bound, label='Not Usable', color='salmon')
+    plt.bar(x, out_of_bound, bar_width, bottom=in_bound, label='OOB-Fixable', color='gold')
+    plt.bar(x, not_usable, bar_width, bottom=in_bound + out_of_bound, label='Not Usable', color='salmon')
 
     for i, val in enumerate(not_usable):
         if val > 0:
-            # Calculate the top of the stacked bar
-            bar_top = in_bound[i] + out_bound[i] + val
+            # calculate the top of the stacked bar
+            bar_top = in_bound[i] + out_of_bound[i] + val
             plt.text(
                 x[i],
-                bar_top + 0.5,  # slightly above the top
+                bar_top + 0.5,
                 f'{val:.1f}%\nNot Usable',
                 ha='center',
                 va='bottom',
@@ -298,14 +299,14 @@ if __name__ == "__main__":
     plt.yticks(range(0, 101, 10))
     plt.legend(fontsize=13)
 
-    # Add model labels beneath groups
+    # add model labels beneath groups
     group_width = n_temps + 1
     midpoints = [i * group_width + (n_temps - 1) / 2 for i in range(len(models))]
 
     for i, model in enumerate(models):
         plt.text(
             midpoints[i],
-            -7,  # Adjust for spacing
+            -7,
             model,
             ha='center',
             va='top',
@@ -313,54 +314,93 @@ if __name__ == "__main__":
             transform=plt.gca().transData
         )
 
-    # Leave space for model labels
+    # leave space for model labels
     plt.tight_layout(rect=[0, 0.08, 1, 1])
 
     # Save figure
-    plt.savefig(f"figures/coverage_{mode}.png", dpi=300)
+    plt.savefig(f"figures/coverage_valid_{mode}.png", dpi=300)
 
-    # figure size
-    plt.figure(figsize=(3, 3))
+    ################################################# PLOT INVALID CAUSES #################################################
 
-    # calculate percentage for each invalid type
-    df_invalid_all['percentage'] = (df_invalid_all['count'] / total_syscall_count) * 100
+    # set up the plot
+    plt.figure(figsize=(7, 5))
 
-    # category plot for invalid causes including total invalid
-    g = sns.catplot(
-        data=df_invalid_all,
-        x='temperature',
-        y='percentage',
-        hue='invalid_type',
-        col='model_name',
-        kind='bar',
-        palette='mako',
-        aspect=1,
-        width=0.3
-    )
+    # bar width and positions
+    bar_width = 0.4
+    n_temps = len(temperature)
+    x = []
+    temp_labels = []
+    for i, model in enumerate(models):
+        for j, temp in enumerate(temperature):
+            x.append(i * (n_temps + 1) + j)
+            temp_labels.append(temp)
 
-    # plot parameters
-    g.set_axis_labels(None, 'Invalid Percentage (%)')
-    g.set_titles('{col_name}')
-    g.set(ylim=(0, 100))
-    g.set_xticklabels(size=15)
-    g.set_yticklabels(size=15)
-    g._legend.set_title(None)
-    g.tight_layout()
+    # plot bars
+    loop = df_invalid_pivot['loop_percentage'].values
+    enumeration = df_invalid_pivot['enumeration_percentage'].values
 
-    for ax in g.axes.flatten():
-        ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
-        # add percentage labels on top of each bar
-        for bar in ax.containers:
-            for rect in bar:
-                height = rect.get_height()
-                if height > 0:
-                    ax.text(
-                        rect.get_x() + rect.get_width() / 2,
-                        height,
-                        f'{height:.1f}%',
-                        ha='center',
-                        va='bottom',
-                        fontsize=8
-                    )
+    # stack: enumeration at bottom, then loop
+    plt.bar(x, enumeration, bar_width, label='Enumeration', color='mediumseagreen')
+    plt.bar(x, loop, bar_width, bottom=enumeration, label='Loop', color='lightcoral')
 
-    plt.savefig(f"figures/coverage_invalid_causes_{mode}.png", dpi=300)
+    for i, val in enumerate(enumeration):
+        if val > 0.0 and val < 5.0:
+            bar_top = loop[i] + val
+            plt.text(
+                x[i],
+                bar_top + 0.5,
+                f'{val:.1f}%',
+                ha='center',
+                va='bottom',
+                fontsize=10,
+                color = 'mediumseagreen'
+            )
+
+    for i, val in enumerate(loop):
+        if val > 0.0 and val < 5.0:
+            # calculate the top of the stacked bar
+            bar_top = enumeration[i] + val + 3
+            plt.text(
+                x[i],
+                bar_top + 0.5,
+                f'{val:.1f}%',
+                ha='center',
+                va='bottom',
+                fontsize=10,
+                color = 'lightcoral'
+            )
+
+    # x ticks and labels
+    plt.xticks(x, temp_labels, fontsize=11)
+    plt.ylabel('Percentage (%)', fontsize=13)
+    plt.ylim(0, 100)
+    plt.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
+    plt.yticks(range(0, 100, 10))
+    plt.legend(fontsize=13)
+
+    # add model labels beneath groups
+    group_width = n_temps + 1
+    midpoints = [i * group_width + (n_temps - 1) / 2 for i in range(len(models))]
+
+    for i, model in enumerate(models):
+        plt.text(
+            midpoints[i],
+            -7,
+            model,
+            ha='center',
+            va='top',
+            fontsize=12,
+            transform=plt.gca().transData
+        )
+
+    # leave space for model labels
+    plt.tight_layout(rect=[0, 0.08, 1, 1])
+
+    plt.savefig(f"figures/coverage_invalid_{mode}.png", dpi=300)
+
+    print("Loop Percentages:")
+    print(df_invalid_pivot[['model_name', 'temperature', 'loop_percentage']])
+
+    print("\nEnumeration Percentages:")
+    print(df_invalid_pivot[['model_name', 'temperature', 'enumeration_percentage']])
+
