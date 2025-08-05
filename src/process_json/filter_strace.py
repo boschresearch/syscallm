@@ -17,14 +17,13 @@ def delete_file(file_path):
         print(f"[ERROR] File does not exist: {file_path}")
 
 
-def process_run_directory(file_path):
-    if os.path.isfile(file_path) and file_path.endswith(".txt"):
-        # list of syscalls with its count
-        syscalls = app_syscalls.syscall_getters[aut]()
-        base_filename = os.path.splitext(os.path.basename(file_path))[0]
+def filter_syscalls(file_path):
+    # list of syscalls with its count
+    syscalls = app_syscalls.syscall_getters[aut]()
+    base_filename = os.path.splitext(os.path.basename(file_path))[0]
 
-        if syscalls is not None and base_filename not in syscalls.keys():
-            delete_file(file_path)
+    if syscalls is not None and base_filename not in syscalls.keys():
+        delete_file(file_path)
 
 
 def process(directory):
@@ -35,4 +34,7 @@ def process(directory):
 
                 for filename in os.listdir(run_dir):
                     file_path = os.path.join(run_dir, filename)
-                    process_run_directory(file_path)
+
+                    # only process strace files
+                    if os.path.isfile(file_path) and file_path.endswith(".txt"):
+                        filter_syscalls(file_path)
