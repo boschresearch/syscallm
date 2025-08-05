@@ -1,5 +1,21 @@
-# TODO: better way of filtering syscalls
-def get_sha256_syscalls():
+import csv
+
+def extract_syscalls_from_csv():
+    # TODO: Better path handling
+    file_path = "/home/jom8be/workspace/syscallm/safety-fuzzing/examples/export/output.oracle.csv"
+    syscall_count = dict()
+    
+    with open(file_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            if reader.line_num == 1:
+                header = row
+                column_index = header.index("syscall")
+            else:
+                syscall = row[column_index]
+                syscall_count[syscall] = syscall_count.get(syscall, 0) + 1
+
+    return dict(sorted(syscall_count.items()))
     return {
         "access": 1,
         "arch_prctl": 1,
@@ -108,8 +124,9 @@ def get_redis_syscalls():
         "statfs": 2,
         "sysinfo": 3,
         "umask": 4,
-        "vfork": 2,
-        "wait4": 32,
-        "write": 103,
-        "writev": 1
-    }
+
+if __name__ == "__main__":
+    syscall_count = extract_syscalls_from_csv()
+    
+    for syscall, count in syscall_count.items():
+        print(f"\"{syscall}\": {count},")
