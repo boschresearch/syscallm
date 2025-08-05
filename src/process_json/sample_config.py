@@ -1,0 +1,43 @@
+import os
+import random
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.config as config
+
+mode = config.mode
+temperature = config.temperature
+models = config.models
+runs = config.runs
+
+sample_size = 1000
+random.seed(42)
+
+def collect_all_json_files(directory):
+    return [
+        os.path.join(root, file)
+        for root, _, files in os.walk(directory)
+        for file in files if file.endswith(".json")
+    ]
+
+
+def sample_files(directory):
+    all_files = collect_all_json_files(directory)
+
+    if len(all_files) > sample_size:
+        return set(random.sample(all_files, sample_size)), set(all_files)
+    return set(all_files), set(all_files)  # all files are selected
+
+
+def process(directory):
+    for temp in (f"temperature_{t}" for t in temperature):
+        for model in models:
+            for run in range(1, runs + 1):
+                run_dir = os.path.join(directory, temp, model, f"run{run}")
+
+                selected, all_files = sample_files(run_dir)
+                to_delete = all_files - selected
+
+                for f in to_delete:
+                    os.remove(f)
+
+                print(f"[INFO] {len(selected)} files kept, {len(to_delete)} deleted in {run_dir}")

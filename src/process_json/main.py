@@ -5,6 +5,7 @@ import inject_what
 import filter_strace
 import inject_when
 import strace_to_config
+import sample_config
 import random_config
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -54,6 +55,9 @@ if __name__ == "__main__":
 
     print("5. Convert strace commands to error injection config files...")
     strace_to_config.process(directory=strace_dir)
+
+    print("6. Sampling...")
+    sample_config.process(directory=config_dir)
 
     # random_config.process_all_models(config_dir_path, mode, "uniform")
     # random_config.process_all_models(config_dir_path, mode, "log")
