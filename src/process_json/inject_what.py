@@ -44,11 +44,13 @@ def process_json_file(file_path):
 
 
 def process(directory):
-    for temp in [f"temperature_{temp}" for temp in temperature]:
+    for temp in (f"temperature_{t}" for t in temperature):
         for model in models:
             for run in range(1, runs + 1):
-                for filename in os.listdir(directory):
-                    file_path = os.path.join(directory, temp, model, f"run{run}", filename)
+                run_dir = os.path.join(directory, temp, model, f"run{run}")
+
+                for filename in os.listdir(run_dir):
+                    file_path = os.path.join(run_dir, filename)
 
                     # only process valid JSON files
                     if utils.is_json(file_path):
