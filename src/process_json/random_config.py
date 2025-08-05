@@ -138,14 +138,14 @@ def process_json_file(file_path, distribution):
         json_content = json.load(file)
 
     # output file path
-    output_path = file_path.replace("/config/", f"/config_random_{distribution}/")
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_file_path = file_path.replace("/config/", f"/config_random_{distribution}/")
+    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     # generate random JSON content
     random_json_content = get_random_config(json_content, mode, distribution)
 
     # write random JSON content to file
-    with open(output_path, 'w') as file:
+    with open(output_file_path, 'w') as file:
         json.dump(random_json_content, file, indent=4)
                 
 

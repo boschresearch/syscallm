@@ -34,11 +34,11 @@ def process_json_file(file_path):
             return
 
         # output path
-        output_path = file_path.replace("/json_filtered/", "/strace/").replace(".json", ".txt")
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_file_path = file_path.replace("/json_filtered/", "/strace/").replace(".json", ".txt")
+        os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     # write strace commands to file
-    with open(output_path, 'w') as file:
+    with open(output_file_path, 'w') as file:
         for line in strace_commands:
             file.write(f"{line}\n")
 

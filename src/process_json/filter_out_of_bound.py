@@ -51,11 +51,11 @@ def process_json_file(file_path):
         set_llm_generated_values(data, filtered_values)
 
         # output path
-        output_path = file_path.replace("/json/", "/json_filtered/")
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_file_path = file_path.replace("/json/", "/json_filtered/")
+        os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     # write the modified data back to the file
-    with open(output_path, 'w') as file:
+    with open(output_file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
 

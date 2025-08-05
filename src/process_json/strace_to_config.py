@@ -45,9 +45,9 @@ def process_strace_file(file_path):
         id = syscall + '_' + str(i + 1)
 
         # output file path
-        output_path = os.path.dirname(file_path).replace("/strace/", "/config/")
-        os.makedirs(output_path, exist_ok=True)
-        output_file_path = os.path.join(output_path, f"{id}.json")
+        output_file_path = os.path.dirname(file_path).replace("/strace/", "/config/")
+        os.makedirs(output_file_path, exist_ok=True)
+        output_file_path = os.path.join(output_file_path, f"{id}.json")
 
         # generate JSON content for safety-fuzzing config
         json_content = generate_json_content(id, strace_param)
