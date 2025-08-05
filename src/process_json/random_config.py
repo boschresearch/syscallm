@@ -1,9 +1,17 @@
 import os
-import argparse
 import json
 import random
 import numpy as np
 import re
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.config as config
+
+mode = config.mode
+temperature = config.temperature
+models = config.models
+runs = config.runs
+aut = config.aut
 
 cache_value = {}
 cache_count = {}
@@ -125,67 +133,33 @@ def get_random_config(json_content, mode, distribution):
     return json_content
 
 
-def process_json_file(json_file_path, mode, distribution):
-    with open(json_file_path, 'r') as file:
+def process_json_file(file_path, distribution):
+    with open(file_path, 'r') as file:
         json_content = json.load(file)
 
     # output file path
-    output_file_path = json_file_path.replace("config", f"config_random_{distribution}")
-    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+    output_path = file_path.replace("/config/", f"/config_random_{distribution}/")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     # generate random JSON content
     random_json_content = get_random_config(json_content, mode, distribution)
 
     # write random JSON content to file
-    with open(output_file_path, 'w') as file:
+    with open(output_path, 'w') as file:
         json.dump(random_json_content, file, indent=4)
-
-
-def process_run_directory(run_dir_path, mode, distribution):
-    """Process all json files in a run directory."""
-    for filename in os.listdir(run_dir_path):
-        if filename.endswith(".json"):
-            json_file_path = os.path.join(run_dir_path, filename)
-            process_json_file(json_file_path, mode, distribution)
                 
 
-def process_model_directory(model_dir_path, mode, distribution):
-    """Process all run directories in a model directory."""
-    for run in os.listdir(model_dir_path):
-        run_dir_path = os.path.join(model_dir_path, run)
-        print(run, end=" ")
-        if os.path.isdir(run_dir_path):
-            # reset the cache_count for each run directory
-            global cache_count, cache_value
-            cache_value = {}
-            cache_count = {}
+def process(directory, distribution):
+    for temp in (f"temperature_{t}" for t in temperature):
+        for model in models:
+            for run in range(1, runs + 1):
+                run_dir = os.path.join(directory, temp, model, f"run{run}")
 
-            process_run_directory(run_dir_path, mode, distribution)
-    print()
+                global cache_count, cache_value
+                cache_value = {}
+                cache_count = {}
 
+                for filename in os.listdir(run_dir):
+                    file_path = os.path.join(run_dir, filename)
 
-def process_all_models(strace_dir, mode, distribution):
-    """Main function to process all model directories."""
-    for model in os.listdir(strace_dir):
-        model_dir_path = os.path.join(strace_dir, model)
-        print(f"Creating baseline config files for {model_dir_path}...", end=" ")
-        if os.path.isdir(model_dir_path):
-            process_model_directory(model_dir_path, mode, distribution)
-
-
-if __name__ == "__main__":
-    # parse command line arguments
-    parser = argparse.ArgumentParser(description="Generate random strace fault injection parameters.")
-    parser.add_argument("--config-dir-path", type=str, help="Path to the directory containing safety-fuzzing testbed config files (can be relative or absolute).")
-    parser.add_argument("--mode", type=str, required=True, help="Fault injection mode (e.g., 'error_code', 'success')")
-    parser.add_argument("--distribution", type=str, required=True, help="Distribution type (e.g., 'uniform', 'log')")
-    args = parser.parse_args()
-
-    mode = args.mode
-    distribution = args.distribution
-
-    # get config directory path
-    config_dir_path = os.path.abspath(args.config_dir_path)
-    config_dir_path = os.path.join(config_dir_path, mode)
-
-    process_all_models(config_dir_path, mode, distribution)
+                    process_json_file(file_path, distribution)

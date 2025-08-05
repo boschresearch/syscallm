@@ -56,8 +56,9 @@ if __name__ == "__main__":
     print("5. Convert strace commands to error injection config files...")
     strace_to_config.process(directory=strace_dir)
 
-    print("6. Sampling...")
-    sample_config.process(directory=config_dir)
+    print("6. Generating random config files...")
+    random_config.process(directory=config_dir, distribution="uniform")
+    random_config.process(directory=config_dir, distribution="log")
 
-    # random_config.process_all_models(config_dir_path, mode, "uniform")
-    # random_config.process_all_models(config_dir_path, mode, "log")
+    # print("7. Sampling...")
+    # sample_config.process(directory=config_dir)
