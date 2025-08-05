@@ -41,7 +41,7 @@ if __name__ == "__main__":
             os.system(f"rm -r {dir_path}")
 
     print("1. Processing JSON files that have out of bound values...")
-    filter_out_of_bound.process_all_temperatures(directory=json_dir)
+    filter_out_of_bound.process(directory=json_dir)
 
     print("2. Converting JSON files to strace commands...")
     inject_what.process_all_temperatures(directory=json_filtered_dir)

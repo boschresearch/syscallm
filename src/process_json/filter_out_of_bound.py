@@ -59,30 +59,13 @@ def process_json_file(file_path):
         json.dump(data, file, indent=4)
 
 
-def process_all_json(directory):
-    for filename in os.listdir(directory):
-        file_path = os.path.join(directory, filename)
-        # only process valid JSON files
-        if utils.is_json(file_path):
-            process_json_file(file_path)
-
-
-def process_all_runs(directory):
-    for run in range(1, runs + 1):
-        run_dir = os.path.join(directory, f"run{run}")
-        if os.path.isdir(run_dir):
-            process_all_json(run_dir)
-
-
-def process_all_models(directory):
-    for model in models:
-        model_dir = os.path.join(directory, model)
-        if os.path.isdir(model_dir):
-            process_all_runs(model_dir)
-
-
-def process_all_temperatures(directory):
+def process(directory):
     for temp in [f"temperature_{temp}" for temp in temperature]:
-        temperature_dir = os.path.join(directory, temp)
-        if os.path.isdir(temperature_dir):
-            process_all_models(temperature_dir)
+        for model in models:
+            for run in range(1, runs + 1):
+                for filename in os.listdir(directory):
+                    file_path = os.path.join(directory, temp, model, f"run{run}", filename)
+
+                    # only process valid JSON files
+                    if utils.is_json(file_path):
+                        process_json_file(file_path)
