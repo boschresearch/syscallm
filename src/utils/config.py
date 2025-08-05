@@ -5,6 +5,7 @@ models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt
 temperature = ["0.3", "0.5", "0.7"]
 mode = "success"
 # mode = "error_code"
+aut = os.environ.get("APPLICATION_NAME")
 total_syscall_count = 345
 
 # file paths

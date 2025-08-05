@@ -45,7 +45,10 @@ if __name__ == "__main__":
 
     print("2. Converting JSON files to strace commands...")
     inject_what.process(directory=json_filtered_dir)
-    # filter_strace.process_all_models(strace_dir_path, aut)
+
+    print("3. Filtering strace commands...")
+    filter_strace.process(directory=strace_dir)
+
     # inject_when.process_all_models(strace_dir_path, aut)
     # strace_to_config.process_all_models(strace_dir_path)
     # random_config.process_all_models(config_dir_path, mode, "uniform")
