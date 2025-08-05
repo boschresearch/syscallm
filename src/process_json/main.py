@@ -52,5 +52,8 @@ if __name__ == "__main__":
     print("4. Adding when parameter to the strace commands...")
     inject_when.process(directory=strace_dir)
 
+    print("5. Convert strace commands to error injection config files...")
+    strace_to_config.process(directory=strace_dir)
+
     # random_config.process_all_models(config_dir_path, mode, "uniform")
     # random_config.process_all_models(config_dir_path, mode, "log")
