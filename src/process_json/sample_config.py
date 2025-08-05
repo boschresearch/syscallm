@@ -1,8 +1,11 @@
 import os
 import random
+import logging
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
+
+logger = logging.getLogger(__name__)
 
 mode = config.mode
 temperature = config.temperature
@@ -40,4 +43,4 @@ def process(directory):
                 for f in to_delete:
                     os.remove(f)
 
-                print(f"[INFO] {len(selected)} files kept, {len(to_delete)} deleted in {run_dir}")
+                logger.debug(f"{len(selected)} files kept, {len(to_delete)} deleted in {run_dir}")

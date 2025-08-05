@@ -1,5 +1,5 @@
 import os
-import argparse
+import logging
 import filter_out_of_bound
 import inject_what
 import filter_strace
@@ -10,6 +10,12 @@ import random_config
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
+
+logging.basicConfig(
+    level=logging.INFO,  # Set default logging level
+    format='[%(levelname)s] %(asctime)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 mode = config.mode
 aut = config.aut
@@ -38,22 +44,22 @@ if __name__ == "__main__":
         if os.path.exists(dir_path):
             os.system(f"rm -r {dir_path}")
 
-    print("1. Processing JSON files that have out of bound values...")
+    logging.info("1. Processing JSON files that have out of bound values...")
     filter_out_of_bound.process(directory=json_dir)
 
-    print("2. Converting JSON files to strace commands...")
+    logging.info("2. Converting JSON files to strace commands...")
     inject_what.process(directory=json_filtered_dir)
 
-    print("3. Filtering strace commands...")
+    logging.info("3. Filtering strace commands...")
     filter_strace.process(directory=strace_dir)
 
-    print("4. Adding when parameter to the strace commands...")
+    logging.info("4. Adding when parameter to the strace commands...")
     inject_when.process(directory=strace_dir)
 
-    print("5. Convert strace commands to error injection config files...")
+    logging.info("5. Convert strace commands to error injection config files...")
     strace_to_config.process(directory=strace_dir)
 
-    print("6. Generating random config files...")
+    logging.info("6. Generating random config files...")
     random_config.process(directory=config_dir, distribution="uniform")
     random_config.process(directory=config_dir, distribution="log")
 
