@@ -44,7 +44,7 @@ if __name__ == "__main__":
     filter_out_of_bound.process(directory=json_dir)
 
     print("2. Converting JSON files to strace commands...")
-    inject_what.process_all_temperatures(directory=json_filtered_dir)
+    inject_what.process(directory=json_filtered_dir)
     # filter_strace.process_all_models(strace_dir_path, aut)
     # inject_when.process_all_models(strace_dir_path, aut)
     # strace_to_config.process_all_models(strace_dir_path)
