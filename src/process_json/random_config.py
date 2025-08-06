@@ -1,57 +1,21 @@
 import os
-import argparse
 import json
 import random
 import numpy as np
 import re
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.app_syscalls as app_syscalls
+import utils.config as config
 
-cache_value = {}
-cache_count = {}
+mode = config.mode
+temperature = config.temperature
+models = config.models
+runs = config.runs
+aut = config.aut
+syscalls = app_syscalls.syscall_getters[aut]()
 
-def get_count(syscall, invocation_num):
-    global cache_count
-
-    key = (syscall, invocation_num)
-
-    if cache_count.get(key) is None:
-        cache_count[key] = 0
-
-    return cache_count[key]
-
-
-def increment_count(syscall, invocation_num):
-    global cache_count
-
-    cache_count[(syscall, invocation_num)] = cache_count.get((syscall, invocation_num)) + 1
-
-
-def get_current_value_count(syscall):
-    global cache_value
-
-    if syscall not in cache_value:
-        return 0
-    else:
-        return len(cache_value[syscall])
-
-
-def add_value(key, value):
-    global cache_value
-
-    if key not in cache_value:
-        cache_value[key] = [value]
-    else:
-        cache_value[key].append(value)
-
-
-def lookup_value(key, value):
-    global cache_value
-
-    if key not in cache_value:
-        return False
-    elif value not in cache_value[key]:
-        return False
-    else:
-        return True
+cache_random_values = {}
 
 
 def draw_log_uniform_including_zero(max_value, p_zero=0.005):
@@ -64,7 +28,7 @@ def draw_log_uniform_including_zero(max_value, p_zero=0.005):
         return np.uint64(np.exp(log_sample))
 
 
-def get_random_number(mode, distribution):
+def get_random_number(distribution):
     """Generate a random unsigned integer."""
     if mode == "success":
         if distribution == "uniform":
@@ -76,41 +40,39 @@ def get_random_number(mode, distribution):
             return random.randint(1, 4095)
         elif distribution == "log":
             return draw_log_uniform_including_zero(max_value=4095, p_zero=0)
+        
+
+def get_unique_random_numbers(distribution, count):
+    unique_values = set()
+
+    while len(unique_values) < count:
+        val = get_random_number(distribution)
+        unique_values.add(val)
+
+    return list(unique_values)
 
 
-def get_random_config(json_content, mode, distribution):
-    """Generate a randomly generated fault injection config file."""
-    global cache_value, cache_count
+def get_index(id_number, total_invocations):
+    return (id_number - 1) % total_invocations
+
+
+def get_random_config(json_content):
+    global cache_random_values
 
     # get id from json content
-    id = json_content["syslog_monitor_config"]["id"]
-    # extract system call name from id
-    system_call = id[:id.rfind("_")]
+    json_id = json_content["syslog_monitor_config"]["id"]
+    # extract system call name and number from id
+    id_syscall = json_id[:json_id.rfind("_")]
+    id_number = int(json_id[json_id.rfind("_") + 1:])
+
+    # total invocation count for the syscall
+    total_invocations = syscalls[id_syscall]
+    
+    # cache index for the random number
+    index = get_index(id_number, total_invocations)
 
     for fault in json_content["syslog_monitor_config"]["faults"]:
-        # extract the invocation number from the fault
-        invocation_num = re.search(r":when=(\d+)", fault).group(1)
-
-        # get the count of the system call and invocation number that are processed
-        cur_invocation_cnt = get_count(system_call, invocation_num)
-        # get the current number of values in the cache for the system call
-        cur_value_cnt = get_current_value_count(system_call)
-
-        if cur_invocation_cnt < cur_value_cnt:
-            # get a random number from the cache
-            random_number = cache_value[system_call][cur_invocation_cnt]
-        else:
-            # generate a new random number
-            random_number = get_random_number(mode, distribution)
-            # check if the random number is already in the cache
-            while lookup_value(system_call, random_number):
-                # generate a new random number
-                random_number = get_random_number(mode, distribution)
-            # add the random number to the cache
-            add_value(system_call, random_number)
-
-        # increment the count for the system call and invocation number
-        increment_count(system_call, invocation_num)
+        random_number = cache_random_values.get(id_syscall)[index]
 
         if mode == "success":
             # replace the return value with the random number
@@ -119,73 +81,58 @@ def get_random_config(json_content, mode, distribution):
             # replace the error code with the random number
             output_str = re.sub(r"error=[^:]+", f"error={str(random_number)}", fault)
 
-    # update the json content with the random values
-    json_content["syslog_monitor_config"]["faults"] = [output_str]
+        # update the json content with the random values
+        json_content["syslog_monitor_config"]["faults"] = [output_str]
 
     return json_content
 
 
-def process_json_file(json_file_path, mode, distribution):
-    with open(json_file_path, 'r') as file:
+def process_json_file(file_path, distribution):
+    with open(file_path, 'r') as file:
         json_content = json.load(file)
 
     # output file path
-    output_file_path = json_file_path.replace("config", f"config_random_{distribution}")
+    output_file_path = file_path.replace("/config/", f"/config_random_{distribution}/")
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
+    print(file_path)
     # generate random JSON content
-    random_json_content = get_random_config(json_content, mode, distribution)
+    random_json_content = get_random_config(json_content)
 
     # write random JSON content to file
     with open(output_file_path, 'w') as file:
         json.dump(random_json_content, file, indent=4)
 
 
-def process_run_directory(run_dir_path, mode, distribution):
-    """Process all json files in a run directory."""
-    for filename in os.listdir(run_dir_path):
-        if filename.endswith(".json"):
-            json_file_path = os.path.join(run_dir_path, filename)
-            process_json_file(json_file_path, mode, distribution)
-                
+def prefill_cache_random_values(distribution):
+    global cache_random_values
 
-def process_model_directory(model_dir_path, mode, distribution):
-    """Process all run directories in a model directory."""
-    for run in os.listdir(model_dir_path):
-        run_dir_path = os.path.join(model_dir_path, run)
-        print(run, end=" ")
-        if os.path.isdir(run_dir_path):
-            # reset the cache_count for each run directory
-            global cache_count, cache_value
-            cache_value = {}
-            cache_count = {}
-
-            process_run_directory(run_dir_path, mode, distribution)
-    print()
+    for syscall, count in syscalls.items():
+        cache_random_values[syscall] = get_unique_random_numbers(distribution, count)
 
 
-def process_all_models(strace_dir, mode, distribution):
-    """Main function to process all model directories."""
-    for model in os.listdir(strace_dir):
-        model_dir_path = os.path.join(strace_dir, model)
-        print(f"Creating baseline config files for {model_dir_path}...", end=" ")
-        if os.path.isdir(model_dir_path):
-            process_model_directory(model_dir_path, mode, distribution)
+def extract_sort_keys(filename):
+    # remove extension if present
+    base = filename.rsplit('.', 1)[0]  
+    
+    # extract syscall name (before last '_') and number (after last '_')
+    syscall, num = base.rsplit('_', 1)
+
+    return (syscall, int(num))
 
 
-if __name__ == "__main__":
-    # parse command line arguments
-    parser = argparse.ArgumentParser(description="Generate random strace fault injection parameters.")
-    parser.add_argument("--config-dir-path", type=str, help="Path to the directory containing safety-fuzzing testbed config files (can be relative or absolute).")
-    parser.add_argument("--mode", type=str, required=True, help="Fault injection mode (e.g., 'error_code', 'success')")
-    parser.add_argument("--distribution", type=str, required=True, help="Distribution type (e.g., 'uniform', 'log')")
-    args = parser.parse_args()
+def process(directory, distribution):
+    global cache_random_values
 
-    mode = args.mode
-    distribution = args.distribution
+    for temp in (f"temperature_{t}" for t in temperature):
+        for model in models:
+            for run in range(1, runs + 1):
+                run_dir = os.path.join(directory, temp, model, f"run{run}")
 
-    # get config directory path
-    config_dir_path = os.path.abspath(args.config_dir_path)
-    config_dir_path = os.path.join(config_dir_path, mode)
+                cache_random_values = {}
+                prefill_cache_random_values(distribution)
 
-    process_all_models(config_dir_path, mode, distribution)
+                for filename in sorted(os.listdir(run_dir), key=extract_sort_keys):
+                    file_path = os.path.join(run_dir, filename)
+
+                    process_json_file(file_path, distribution)

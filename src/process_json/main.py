@@ -1,41 +1,70 @@
 import os
-import process.inject_what as inject_what
-import process.filter_strace as filter_strace
-import process.inject_when as inject_when
-import process.strace_to_config as strace_to_config
-import process.random_config as random_config
-import argparse
+import logging
+import check_compatibility
+import filter_out_of_bound
+import inject_what
+import filter_strace
+import inject_when
+import strace_to_config
+import sample_config
+import random_config
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import utils.config as config
+
+logging.basicConfig(
+    level=logging.INFO,  # Set default logging level
+    format='[%(levelname)s] %(asctime)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+mode = config.mode
+aut = config.aut
+data_dir = config.data_dir
+json_dir = config.json_dir
+json_filtered_dir = config.json_filtered_dir
+strace_dir = config.strace_dir
+config_dir = config.config_dir
+config_random_uniform_dir = config.config_random_uniform_dir
+config_random_log_dir = config.config_random_log_dir
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process JSON files to generate the faultload.")
-    parser.add_argument("--mode", type=str, required=True, help="Fault injection mode (e.g., 'error_code', 'success')")
-    parser.add_argument("--aut", type=str, required=True, help="Application under test (e.g., 'redis', 'sha256')")
-    args = parser.parse_args()
+    print(f" * Running in {mode} mode for {aut}")
 
-    mode = args.mode
-    aut = args.aut
-    print(f"Running in {mode} mode for {aut}")
-
-    data_dir_path = os.path.abspath(os.path.join(os.getcwd(), "..", "data"))
-    json_dir_path = os.path.join(data_dir_path, "json", mode)
-    strace_dir_path = os.path.join(data_dir_path, "strace", mode)
-    config_dir_path = os.path.join(data_dir_path, "config", mode)
-
-    # Directories to remove if they exist
+    # directories to remove if they exist
     dirs_to_remove = [
-        strace_dir_path,
-        config_dir_path,
-        os.path.join(data_dir_path, "config_random_uniform", mode),
-        os.path.join(data_dir_path, "config_random_log", mode),
+        json_filtered_dir,
+        strace_dir,
+        config_dir,
+        config_random_uniform_dir,
+        config_random_log_dir,
     ]
 
     for dir_path in dirs_to_remove:
         if os.path.exists(dir_path):
             os.system(f"rm -r {dir_path}")
 
-    inject_what.process_all_models(json_dir_path, mode)
-    filter_strace.process_all_models(strace_dir_path, aut)
-    inject_when.process_all_models(strace_dir_path, aut)
-    strace_to_config.process_all_models(strace_dir_path)
-    random_config.process_all_models(config_dir_path, mode, "uniform")
-    random_config.process_all_models(config_dir_path, mode, "log")
+    check_compatibility.process(directory=json_dir)
+
+    logging.info("1. Processing JSON files that have out of bound values...")
+    filter_out_of_bound.process(directory=json_dir)
+
+    logging.info("2. Converting JSON files to strace commands...")
+    inject_what.process(directory=json_filtered_dir)
+
+    logging.info("3. Filtering strace commands...")
+    filter_strace.process(directory=strace_dir)
+
+    logging.info("4. Adding when parameter to the strace commands...")
+    inject_when.process(directory=strace_dir)
+
+    logging.info("5. Convert strace commands to error injection config files...")
+    strace_to_config.process(directory=strace_dir)
+
+    logging.info("6. Sampling...")
+    sample_config.process(directory=config_dir)
+
+    logging.info("7. Generating random config files...")
+    random_config.process(directory=config_dir, distribution="uniform")
+    random_config.process(directory=config_dir, distribution="log")
