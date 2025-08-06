@@ -11,11 +11,9 @@ models = config.models
 runs = config.runs
 
 
-def json_to_strace(data):
-    if not isinstance(data, dict) or 'name' not in data:
+def json_to_strace(data, syscall_name):
+    if not isinstance(data, dict):
         return []
-
-    syscall_name = data['name']
 
     if mode == "success" and 'test_values' in data:
         return [f"inject={syscall_name}:retval={val}" for val in data['test_values']]
@@ -24,10 +22,12 @@ def json_to_strace(data):
 
 
 def process_json_file(file_path):
+    filename = os.path.splitext(os.path.basename(file_path))[0]
+
     with open(file_path, 'r') as file:
         data = json.load(file)
         # convert JSON data to strace commands
-        strace_commands = json_to_strace(data)
+        strace_commands = json_to_strace(data, filename)
 
         # if no strace commands are generated, skip writing the file
         if not strace_commands:
