@@ -25,7 +25,12 @@ def process_json_file(file_path):
     filename = os.path.splitext(os.path.basename(file_path))[0]
 
     with open(file_path, 'r') as file:
-        data = json.load(file)
+        try:    
+            data = json.load(file)
+        except json.JSONDecodeError as e:
+            print(f"Failed to decode JSON from {file_path}: {e}")
+            return
+        
         # convert JSON data to strace commands
         strace_commands = json_to_strace(data, filename)
 

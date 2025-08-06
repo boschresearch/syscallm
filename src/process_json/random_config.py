@@ -89,7 +89,11 @@ def get_random_config(json_content):
 
 def process_json_file(file_path, distribution):
     with open(file_path, 'r') as file:
-        json_content = json.load(file)
+        try:
+            json_content = json.load(file)
+        except json.JSONDecodeError as e:
+            print(f"Failed to decode JSON from {file_path}: {e}")
+            return
 
     # output file path
     output_file_path = file_path.replace("/config/", f"/config_random_{distribution}/")
