@@ -17,9 +17,9 @@ random.seed(42)
 
 def collect_all_json_files(directory):
     return [
-        os.path.join(root, file)
-        for root, _, files in os.walk(directory)
-        for file in files if file.endswith(".json")
+        os.path.join(directory, file)
+        for file in os.listdir(directory)
+        if file.endswith('.json')
     ]
 
 
