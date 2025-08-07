@@ -3,6 +3,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKING_DIR="$(dirname "$SCRIPT_DIR")"
 
+# extract man pages for syscalls
+bash "$WORKING_DIR/llm-syscall/scripts/extract_syscall_man_pages.sh"
+
 # check if nvidia-smi is available
 if command -v nvidia-smi &> /dev/null; then
     # generate JSON files with LLMs
