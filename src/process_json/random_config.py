@@ -71,6 +71,7 @@ def get_random_config(json_content):
     # cache index for the random number
     index = get_index(id_number, total_invocations)
 
+    updated_faults = []
     for fault in json_content["syslog_monitor_config"]["faults"]:
         random_number = cache_random_values.get(id_syscall)[index]
 
@@ -81,21 +82,26 @@ def get_random_config(json_content):
             # replace the error code with the random number
             output_str = re.sub(r"error=[^:]+", f"error={str(random_number)}", fault)
 
-        # update the json content with the random values
-        json_content["syslog_monitor_config"]["faults"] = [output_str]
+        updated_faults.append(output_str)
+
+    # update the json content with the updated faults list
+    json_content["syslog_monitor_config"]["faults"] = updated_faults
 
     return json_content
 
 
 def process_json_file(file_path, distribution):
     with open(file_path, 'r') as file:
-        json_content = json.load(file)
+        try:
+            json_content = json.load(file)
+        except json.JSONDecodeError as e:
+            print(f"Failed to decode JSON from {file_path}: {e}")
+            return
 
     # output file path
     output_file_path = file_path.replace("/config/", f"/config_random_{distribution}/")
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
-    print(file_path)
     # generate random JSON content
     random_json_content = get_random_config(json_content)
 
