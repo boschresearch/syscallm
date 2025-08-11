@@ -70,7 +70,7 @@ To understand the details of LLM-based test generation, see [`llm-syscall/README
 - How to extract manual pages for each system call
 - Setting up `OPENAI_API_KEY` and configuring model parameters
 
-A sample LLM-generated test case for the *accept* system call's success return values:
+A sample LLM-generated test case for the *accept4* system call's success return values:
 
 ``` json
 {
@@ -78,13 +78,12 @@ A sample LLM-generated test case for the *accept* system call's success return v
     0,
     1,
     2,
-    3,
-    1023,
-    65535,
-    1048576,
+    1024,
+    65536,
     2147483647,
     4294967295,
-    9223372036854775807
+    9223372036854775807,
+    18446744073709551615
   ]
 }
 ```
@@ -113,6 +112,26 @@ This script will run `src/process_json/main.py` for the following steps:
     - There could be extensive amount of config files generated for one application-under-test. Therefore, we sample `1000` config files randomly for each run.
 7. **Generating random config files**
     - Produces a separate set of random configurations to serve as a baseline in the associated scientific publication.
+
+A sample of one config files related to the system call *accept4*, after the pipeline:
+
+``` json
+{
+    "syslog_monitor_config": {
+        "id": "accept4_98",
+        "strace_output": "/export/strace.output.{id}",
+        "output": [
+            {
+                "format": "csv",
+                "target": "/export/output.{id}.csv"
+            }
+        ],
+        "faults": [
+            "inject=accept4:retval=4294967295:when=14..14"
+        ]
+    }
+}
+```
 
 ### 3. Safety Fuzzing Testbed
 
