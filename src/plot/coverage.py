@@ -13,7 +13,7 @@ import utils.config as config
 plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
-models = config.models
+models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
 temperature = config.temperature
 mode = config.mode
 total_syscall_count = config.total_syscall_count
