@@ -3,6 +3,9 @@ import os
 runs = 5
 models = ["gpt-4o"]
 temperature = ["0.5"]
+# aut = "nginx"
+# aut = "redis"
+aut = "python"
 total_syscall_count = 345
 
 # file paths
