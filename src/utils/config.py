@@ -2,10 +2,7 @@ import os
 
 runs = 5
 models = ["gpt-4o"]
-temperature = ["0.3", "0.5", "0.7"]
-mode = "success"
-# mode = "error_code"
-aut = os.environ.get("APPLICATION_NAME")
+temperature = ["0.5"]
 total_syscall_count = 345
 
 # file paths

@@ -14,7 +14,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
 models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
-temperature = config.temperature
+temperature = ["0.3", "0.5", "0.7"]
 mode = config.mode
 total_syscall_count = config.total_syscall_count
 data_dir = config.data_dir
