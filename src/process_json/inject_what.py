@@ -9,6 +9,7 @@ mode = config.mode
 temperature = config.temperature
 models = config.models
 runs = config.runs
+aut = config.aut
 
 
 def json_to_strace(data, syscall_name):
@@ -39,7 +40,7 @@ def process_json_file(file_path):
             return
 
         # output path
-        output_file_path = file_path.replace("/json_filtered/", "/strace/").replace(".json", ".txt")
+        output_file_path = file_path.replace("/json_filtered/", f"/strace/{aut}/").replace(".json", ".txt")
         os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     # write strace commands to file

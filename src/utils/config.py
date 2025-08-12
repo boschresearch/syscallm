@@ -12,10 +12,10 @@ total_syscall_count = 345
 data_dir = "/home/jom8be/workspace/syscallm/data"
 json_dir = os.path.join(data_dir, "json", mode)
 json_filtered_dir = os.path.join(data_dir, "json_filtered", mode)
-strace_dir = os.path.join(data_dir, "strace", mode)
-config_dir = os.path.join(data_dir, "config", mode)
-config_random_uniform_dir = os.path.join(data_dir, "config_random_uniform", mode)
-config_random_log_dir = os.path.join(data_dir, "config_random_log", mode)
+strace_dir = os.path.join(data_dir, "strace", aut, mode)
+config_dir = os.path.join(data_dir, "config", aut, mode)
+config_random_uniform_dir = os.path.join(data_dir, "config_random_uniform", aut, mode)
+config_random_log_dir = os.path.join(data_dir, "config_random_log", aut, mode)
 
 # TODO: data are missing
 # file paths for each Ubuntu version
