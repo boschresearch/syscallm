@@ -3,6 +3,8 @@ import os
 runs = 5
 models = ["gpt-4o"]
 temperature = ["0.5"]
+mode = "success"
+# mode = "error_code"
 # aut = "nginx"
 # aut = "redis"
 aut = "python"
