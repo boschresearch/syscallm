@@ -135,13 +135,47 @@ A sample of one config files related to the system call *accept4*, after the pip
 
 ### 3. Safety Fuzzing Testbed
 
+First, make sure you have set up your test environment, specified in [Safety Fuzzing - Setup](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/wiki/Setup). For a quick start, follow [Safety Fuzzing - Quick Start](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/wiki/Usage#quick-start).
+
 A very detailed documentation is provided in [`safety-fuzzing/README.md`](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/tree/main) that includes:
 
 - How to configure the experiment environment
+- How to test your own application
 - How to build a monitor component
 - How to build a test image
 - How to run the experiments
 - How to extract the experiment results
+
+After running the experiments and extracting the results by:
+
+```bash
+python3 ./safety-fuzzing/src/failure_analysis/main.py --output result.csv
+```
+
+You will gain a result.csv that looks something like this:
+
+```csv
+id,app_crash,error_exit,app_hang,silent_data_corruption,no_changes,timeout
+access_1,False,False,False,False,True,
+arch_prctl_8,False,False,False,False,True,
+arch_prctl_15,False,False,False,False,True,
+brk_7,False,False,False,False,True,
+brk_12,False,False,False,False,True,
+brk_17,False,False,False,False,True,
+brk_22,False,False,False,False,True,
+brk_26,False,False,False,False,True,
+brk_27,False,False,False,False,True,
+brk_43,False,False,False,False,True,
+brk_92,False,False,False,False,True,
+brk_93,True,False,False,False,False,
+brk_96,True,False,False,False,False,
+brk_98,False,False,False,False,True,
+brk_101,False,False,False,False,True,
+brk_105,False,False,False,False,True,
+brk_110,False,False,False,False,True,
+brk_111,False,False,False,False,True,
+...
+```
 
 ### 4. Visualization of Experiment Results
 
