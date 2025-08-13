@@ -4,6 +4,7 @@ import json
 import errno
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as path_effects
 from collections import Counter
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -352,31 +353,46 @@ if __name__ == "__main__":
     plt.bar(x, loop, bar_width, bottom=enumeration, label='Loop', color='crimson')
     plt.bar(x, blocked, bar_width, bottom=enumeration + loop, label='Blocked', color='darkviolet')
 
-    for i, val in enumerate(enumeration):
-        if val > 0.0 and val < 5.0:
-            bar_top = loop[i] + val
+    # add value labels for bars with values > 0 and < 5, using the same color as the bar
+    for i, (val_enum, val_loop, val_block) in enumerate(zip(enumeration, loop, blocked)):
+        # enumeration
+        if val_enum > 0.0 and val_enum < 5.0:
+            bar_top = val_enum
             plt.text(
                 x[i],
                 bar_top + 0.5,
-                f'{val:.1f}%',
+                f'{val_enum:.2f}%',
                 ha='center',
                 va='bottom',
                 fontsize=10,
-                color = 'mediumseagreen'
+                color='mediumseagreen',
+                path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
             )
-
-    for i, val in enumerate(loop):
-        if val > 0.0 and val < 5.0:
-            # calculate the top of the stacked bar
-            bar_top = enumeration[i] + val + 3
+        # loop
+        if val_loop > 0.0 and val_loop < 5.0:
+            bar_top = val_enum + val_loop
             plt.text(
                 x[i],
                 bar_top + 0.5,
-                f'{val:.1f}%',
+                f'{val_loop:.2f}%',
                 ha='center',
                 va='bottom',
                 fontsize=10,
-                color = 'lightcoral'
+                color='crimson',
+                path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
+            )
+        # blocked
+        if val_block > 0.0 and val_block < 5.0:
+            bar_top = val_enum + val_loop + val_block
+            plt.text(
+                x[i],
+                bar_top + 0.5,
+                f'{val_block:.2f}%',
+                ha='center',
+                va='bottom',
+                fontsize=10,
+                color='darkviolet',
+                path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
             )
 
     # x ticks and labels
