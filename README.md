@@ -179,11 +179,11 @@ brk_111,False,False,False,False,True,
 
 ### 4. Visualization of Experiment Results
 
-Generate coverage and failure analysis plots:
+Generate coverage and failure analysis plots by:
 
 ```bash
 # analyze failure patterns
-python3 src/plot_failure.py
+python3 src/plot/plot_failure.py
 ```
 
 ## Open Source Software
@@ -191,7 +191,7 @@ This project relies on the usage of open-source Python libraries. Please see [`l
 
 ## Contact
 
-For any questions or issues, please contact [JOM8BE](mailto:MinHee.Jo@de.bosch.com).
+For any questions or issues, please contact [Min Hee Jo](mailto:MinHee.Jo@de.bosch.com).
 
 ## License
 License: BIOSL-v4
