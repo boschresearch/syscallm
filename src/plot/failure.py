@@ -1,9 +1,20 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
 import json
-from app_syscalls import get_redis_syscalls
+import utils.app_syscalls as app_syscalls
+
+runs = config.runs
+aut = config.aut
+temperature = config.temperature[0]
+result_dir = config.result_dir
+baseline = config.baseline
+llm_config = os.path.join(config.config_dir, f"temperature_{temperature}", "gpt-4o")
+random_config = os.path.join(config.config_random_log_dir, f"temperature_{temperature}", "gpt-4o")
 
 plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
@@ -19,8 +30,6 @@ palette = {
     'Silent Data Corruption': colors[3],
     'No Changes': colors[4]
 }
-
-runs = config.runs
 
 def read_data(llm_file, random_file):
     # read data from CSV files
@@ -334,7 +343,7 @@ def plot_test_case_distribution(data):
     outcome_sums.drop(columns=outcome_types, inplace=True)
 
     # filter to only include relevant syscalls
-    syscall_dict = get_redis_syscalls()
+    syscall_dict = app_syscalls.syscall_getters[aut]()
     outcome_sums = outcome_sums[outcome_sums['syscall'].isin(syscall_dict.keys())]
 
     # ensure all syscalls and runs are present (fill missing with 0)
@@ -419,9 +428,6 @@ def process_dataset(data, config_base, result_types):
 
 
 def plot_error_instances(data1, data2):
-    llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
-    random_config = "/home/jom8be/workspaces/data/config_random_log/gpt-4o"
-
     error_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
     titles = ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
     datasets = [
@@ -478,13 +484,8 @@ def plot_error_instances(data1, data2):
 
 
 def plot_error_instances_no_changes(data1, data2):
-    llm_config = "/home/jom8be/workspaces/data/config/gpt-4o"
-    random_config = "/home/jom8be/workspaces/data/config_random_log/gpt-4o"
-
-    result_types = ['no_changes']
-
-    df1 = process_dataset(data1, llm_config, result_types)['no_changes']
-    df2 = process_dataset(data2, random_config, result_types)['no_changes']
+    df1 = process_dataset(data1, llm_config, ['no_changes'])['no_changes']
+    df2 = process_dataset(data2, random_config, ['no_changes'])['no_changes']
 
     # get unique syscalls
     all_syscalls = pd.concat([data1, data2])
@@ -528,8 +529,8 @@ def main():
 
     for i in range(1, runs + 1):
         # file paths
-        llm_generated_file = f'/home/jom8be/workspaces/data/result/result{i}.csv'
-        random_generated_file = f'/home/jom8be/workspaces/data/result/result_random_log{i}.csv'
+        llm_generated_file = os.path.join(result_dir, f'result{i}.csv')
+        random_generated_file = os.path.join(result_dir, f'result_random_{baseline}{i}.csv')
 
         # read data
         llm_data, random_data = read_data(llm_generated_file, random_generated_file)
