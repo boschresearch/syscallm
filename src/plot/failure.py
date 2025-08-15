@@ -9,8 +9,9 @@ import json
 import utils.app_syscalls as app_syscalls
 
 runs = config.runs
-aut = config.aut
 temperature = config.temperature[0]
+mode = config.mode
+aut = config.aut
 result_dir = config.result_dir
 baseline = config.baseline
 llm_config = os.path.join(config.config_dir, f"temperature_{temperature}", "gpt-4o")
@@ -175,7 +176,7 @@ def plot_outcome_per_syscall(data1, data2):
     frame.set_linewidth(0.7)
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"figures/outcome_per_syscall_{mode}.png", dpi=300)
 
 
 def plot_failure_per_syscall(data1, data2):
@@ -232,7 +233,7 @@ def plot_failure_per_syscall(data1, data2):
 
     fig.supxlabel('Count', fontsize=14)
     plt.tight_layout(rect=[0, 0, 1, 0.93])
-    plt.show()
+    plt.savefig(f"figures/failure_per_syscall_{mode}.png", dpi=300)
 
 
 def plot_silent_data_corruption_by_syscall(llm, random):
@@ -267,7 +268,7 @@ def plot_silent_data_corruption_by_syscall(llm, random):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.legend(fontsize=12)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"figures/silent_data_corruption_{mode}.png", dpi=300)
 
 
 def plot_outcome(data1, data2):
@@ -329,7 +330,7 @@ def plot_outcome(data1, data2):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.legend(fontsize=12)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"figures/outcome_overview_{mode}.png", dpi=300)
 
 
 def plot_test_case_distribution(data):
@@ -379,7 +380,7 @@ def plot_test_case_distribution(data):
     plt.legend(title='Run', fontsize=15, loc='upper right')
     plt.grid(linestyle='--', alpha=0.7)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"figures/error_cases_{mode}.png", dpi=300)
 
 
 def extract_retval(config_path):
@@ -480,7 +481,7 @@ def plot_error_instances(data1, data2):
 
     fig.supxlabel('Return Value (log scale)', fontsize=15)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"figures/error_values_{mode}.png", dpi=300)
 
 
 def plot_error_instances_no_changes(data1, data2):
@@ -519,7 +520,7 @@ def plot_error_instances_no_changes(data1, data2):
     fig.legend(handles, labels, title='when', loc='upper left', bbox_to_anchor=(0.9, 0.95))
     fig.supxlabel('Return Value for No Changes (log scale)', fontsize=14)
     plt.tight_layout(pad=1.0, w_pad=0.5, h_pad=0.5, rect=[0, 0, 0.9, 1])
-    plt.show()
+    plt.savefig(f"figures/no_changes_{mode}.png", dpi=300)
 
 
 def main():    
