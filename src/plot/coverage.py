@@ -4,6 +4,7 @@ import json
 import errno
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as path_effects
 from collections import Counter
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -13,8 +14,8 @@ import utils.config as config
 plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
-models = config.models
-temperature = config.temperature
+models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
+temperature = ["0.3", "0.5", "0.7"]
 mode = config.mode
 total_syscall_count = config.total_syscall_count
 data_dir = config.data_dir
@@ -25,9 +26,9 @@ hallucinatory_error_codes = {model: [] for model in models}
 def categorize(json_dir):
     valid, invalid = categorize_valid_invalid(json_dir)
     valid_empty, valid_all_out_of_bound, valid_out_of_bound = categorize_valid(valid, json_dir)
-    invalid_loop, invalid_enumeration = categorize_invalid(invalid, json_dir)
+    invalid_loop, invalid_enumeration, invalid_blocked = categorize_invalid(invalid, json_dir)
 
-    return valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration
+    return valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration, invalid_blocked
 
 
 def categorize_valid_invalid(json_dir):
@@ -51,6 +52,7 @@ def categorize_valid_invalid(json_dir):
 def categorize_invalid(invalid, json_dir):
     invalid_loop = []
     invalid_enumeration = []
+    invalid_blocked = []
 
     model_name = os.path.basename(os.path.dirname(json_dir))
 
@@ -64,6 +66,9 @@ def categorize_invalid(invalid, json_dir):
                 if is_enumeration_gpt(content):
                     invalid_enumeration.append(filename)
                     continue
+                elif is_blocked_gpt(content):
+                    invalid_blocked.append(filename)
+                    continue
 
             llm_generated_values = extract_llm_generated_values(content)
 
@@ -74,7 +79,7 @@ def categorize_invalid(invalid, json_dir):
             else:
                 invalid_enumeration.append(filename)
 
-    return invalid_loop, invalid_enumeration
+    return invalid_loop, invalid_enumeration, invalid_blocked
 
 
 def categorize_valid(valid, json_dir):
@@ -115,6 +120,7 @@ def extract_llm_generated_values(string: str):
 
 
 def get_test_values(string: str):
+    values = []
     match = re.search(r'"test_values"\s*:\s*\[([^\]]*)\]?', string)
 
     if match:
@@ -124,11 +130,7 @@ def get_test_values(string: str):
             values = [int(v) for v in re.findall(r'-?\d+', values_str)]
         except ValueError as e:
             print(f"Error extracting test values: {e}")
-            values = []
-    else:
-        print(f"No test values found")
-        values = []
-        
+
     return values
 
 
@@ -187,6 +189,12 @@ def is_enumeration_gpt(string: str):
     return False
 
 
+def is_blocked_gpt(string: str):
+    if string.startswith("ContentFilterFinishReasonError"):
+        return True
+    return False
+
+
 def update_hallucinatory_error_codes(model, llm_generated_values):
     global hallucinatory_error_codes
 
@@ -211,10 +219,10 @@ if __name__ == "__main__":
                 json_dir = os.path.join(temp_dir, model, f'run{run}')
 
                 # categorize valid and invalid json files
-                valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration = categorize(json_dir)
+                valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration, invalid_blocked = categorize(json_dir)
 
                 df_valid = pd.concat([df_valid, pd.DataFrame({'model_name': [model], 'run': [run], 'temperature': [temp], 'total_count': [len(valid)], 'not_usable_count': [len(valid_empty) + len(valid_all_out_of_bound)], 'out_of_bound_count': [len(valid_out_of_bound)]})], ignore_index=True)
-                df_invalid = pd.concat([df_invalid, pd.DataFrame({'model_name': [model], 'run': [run], 'temperature': [temp], 'loop_count': [len(invalid_loop)], 'enumeration_count': [len(invalid_enumeration)]})], ignore_index=True)
+                df_invalid = pd.concat([df_invalid, pd.DataFrame({'model_name': [model], 'run': [run], 'temperature': [temp], 'loop_count': [len(invalid_loop)], 'enumeration_count': [len(invalid_enumeration)], 'blocked_count': [len(invalid_blocked)]})], ignore_index=True)
 
                 # print(f"Model: {model}, Temperature: {temp}, Run: {run}, Number of Valid/Invalid: {len(valid)}/{len(invalid)},\nValid Empty: {valid_empty}\nValid Out of Bound: {valid_out_of_bound}\nValid All Out of Bound: {valid_all_out_of_bound}\nInvalid in Loop: {invalid_loop},\nInvalid Token Size Too Small: {invalid_enumeration}\n")
 
@@ -236,6 +244,7 @@ if __name__ == "__main__":
     df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage'] - df_valid['not_usable_percentage']
     df_invalid['loop_percentage'] = (df_invalid['loop_count'] / total_syscall_count) * 100
     df_invalid['enumeration_percentage'] = (df_invalid['enumeration_count'] / total_syscall_count) * 100
+    df_invalid['blocked_percentage'] = (df_invalid['blocked_count'] / total_syscall_count) * 100
 
     # pivot data for easier plotting, include empty_percentage and all_out_of_bound_percentage
     df_valid_pivot = df_valid.pivot_table(
@@ -247,7 +256,7 @@ if __name__ == "__main__":
     # pivot to get counts per invalid_type as columns
     df_invalid_pivot = df_invalid.pivot_table(
         index=['model_name', 'temperature'],
-        values=['loop_percentage', 'enumeration_percentage'],
+        values=['loop_percentage', 'enumeration_percentage', 'blocked_percentage'],
         aggfunc='mean'
     ).reset_index()
     df_invalid_pivot = df_invalid_pivot.infer_objects(copy=False).fillna(0)
@@ -337,36 +346,53 @@ if __name__ == "__main__":
     # plot bars
     loop = df_invalid_pivot['loop_percentage'].values
     enumeration = df_invalid_pivot['enumeration_percentage'].values
+    blocked = df_invalid_pivot['blocked_percentage'].values
 
     # stack: enumeration at bottom, then loop
     plt.bar(x, enumeration, bar_width, label='Enumeration', color='mediumseagreen')
-    plt.bar(x, loop, bar_width, bottom=enumeration, label='Loop', color='lightcoral')
+    plt.bar(x, loop, bar_width, bottom=enumeration, label='Loop', color='crimson')
+    plt.bar(x, blocked, bar_width, bottom=enumeration + loop, label='Blocked', color='darkviolet')
 
-    for i, val in enumerate(enumeration):
-        if val > 0.0 and val < 5.0:
-            bar_top = loop[i] + val
+    # add value labels for bars with values > 0 and < 5, using the same color as the bar
+    for i, (val_enum, val_loop, val_block) in enumerate(zip(enumeration, loop, blocked)):
+        # enumeration
+        if val_enum > 0.0 and val_enum < 5.0:
+            bar_top = val_enum
             plt.text(
                 x[i],
                 bar_top + 0.5,
-                f'{val:.1f}%',
+                f'{val_enum:.2f}%',
                 ha='center',
                 va='bottom',
                 fontsize=10,
-                color = 'mediumseagreen'
+                color='mediumseagreen',
+                path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
             )
-
-    for i, val in enumerate(loop):
-        if val > 0.0 and val < 5.0:
-            # calculate the top of the stacked bar
-            bar_top = enumeration[i] + val + 3
+        # loop
+        if val_loop > 0.0 and val_loop < 5.0:
+            bar_top = val_enum + val_loop
             plt.text(
                 x[i],
                 bar_top + 0.5,
-                f'{val:.1f}%',
+                f'{val_loop:.2f}%',
                 ha='center',
                 va='bottom',
                 fontsize=10,
-                color = 'lightcoral'
+                color='crimson',
+                path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
+            )
+        # blocked
+        if val_block > 0.0 and val_block < 5.0:
+            bar_top = val_enum + val_loop + val_block
+            plt.text(
+                x[i],
+                bar_top + 0.5,
+                f'{val_block:.2f}%',
+                ha='center',
+                va='bottom',
+                fontsize=10,
+                color='darkviolet',
+                path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
             )
 
     # x ticks and labels
@@ -402,4 +428,7 @@ if __name__ == "__main__":
 
     print("\nEnumeration Percentages:")
     print(df_invalid_pivot[['model_name', 'temperature', 'enumeration_percentage']])
+
+    print("\nBlocked Percentages:")
+    print(df_invalid_pivot[['model_name', 'temperature', 'blocked_percentage']])
 

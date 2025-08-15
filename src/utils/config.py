@@ -1,21 +1,23 @@
 import os
 
 runs = 5
-models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
-temperature = ["0.3", "0.5", "0.7"]
+models = ["gpt-4o"]
+temperature = ["0.5"]
 mode = "success"
 # mode = "error_code"
-aut = os.environ.get("APPLICATION_NAME")
+# aut = "nginx"
+# aut = "redis"
+aut = "python"
 total_syscall_count = 345
 
 # file paths
 data_dir = "/home/jom8be/workspace/syscallm/data"
 json_dir = os.path.join(data_dir, "json", mode)
 json_filtered_dir = os.path.join(data_dir, "json_filtered", mode)
-strace_dir = os.path.join(data_dir, "strace", mode)
-config_dir = os.path.join(data_dir, "config", mode)
-config_random_uniform_dir = os.path.join(data_dir, "config_random_uniform", mode)
-config_random_log_dir = os.path.join(data_dir, "config_random_log", mode)
+strace_dir = os.path.join(data_dir, "strace", aut, mode)
+config_dir = os.path.join(data_dir, "config", aut, mode)
+config_random_uniform_dir = os.path.join(data_dir, "config_random_uniform", aut, mode)
+config_random_log_dir = os.path.join(data_dir, "config_random_log", aut, mode)
 
 # TODO: data are missing
 # file paths for each Ubuntu version

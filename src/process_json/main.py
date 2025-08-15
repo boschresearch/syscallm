@@ -29,7 +29,11 @@ config_random_log_dir = config.config_random_log_dir
 
 
 if __name__ == "__main__":
-    print(f" * Running in {mode} mode for {aut}")
+    print(f" * Run in {mode} mode for {aut}? (y/n): ", end="")
+    user_input = input().strip().lower()
+    if user_input != "y":
+        print("Exiting...")
+        sys.exit(0)
 
     # directories to remove if they exist
     dirs_to_remove = [
