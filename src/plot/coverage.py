@@ -14,6 +14,7 @@ import utils.config as config
 plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
+aut = config.aut
 models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
 temperature = ["0.3", "0.5", "0.7"]
 mode = config.mode
@@ -325,8 +326,7 @@ if __name__ == "__main__":
     # leave space for model labels
     plt.tight_layout(rect=[0, 0.08, 1, 1])
 
-    # Save figure
-    plt.savefig(f"figures/coverage_valid_{mode}.png", dpi=300)
+    plt.savefig(f"figures/coverage_valid_{aut}_{mode}.png", dpi=300)
 
     ################################################# PLOT INVALID CAUSES #################################################
 
@@ -421,7 +421,7 @@ if __name__ == "__main__":
     # leave space for model labels
     plt.tight_layout(rect=[0, 0.08, 1, 1])
 
-    plt.savefig(f"figures/coverage_invalid_{mode}.png", dpi=300)
+    plt.savefig(f"figures/coverage_invalid_{aut}_{mode}.png", dpi=300)
 
     print("Loop Percentages:")
     print(df_invalid_pivot[['model_name', 'temperature', 'loop_percentage']])
