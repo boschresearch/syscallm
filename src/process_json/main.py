@@ -2,7 +2,7 @@ import os
 import logging
 import filter_out_of_bound
 import inject_what
-import filter_strace
+import filter_syscall
 import inject_when
 import strace_to_config
 import sample_config
@@ -48,14 +48,14 @@ if __name__ == "__main__":
         if os.path.exists(dir_path):
             os.system(f"rm -r {dir_path}")
 
-    logging.info("1. Processing JSON files that have out of bound values...")
-    filter_out_of_bound.process(directory=json_dir)
+    logging.info("1. Filtering System Calls...")
+    filter_syscall.process(directory=json_dir)
 
-    logging.info("2. Converting JSON files to strace commands...")
+    logging.info("2. Filtering out of bound values from filtered JSON files...")
+    filter_out_of_bound.process(directory=json_filtered_dir)
+
+    logging.info("3. Converting JSON files to strace commands...")
     inject_what.process(directory=json_filtered_dir)
-
-    logging.info("3. Filtering strace commands...")
-    filter_strace.process(directory=strace_dir)
 
     logging.info("4. Adding when parameter to the strace commands...")
     inject_when.process(directory=strace_dir)
