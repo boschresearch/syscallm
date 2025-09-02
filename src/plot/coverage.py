@@ -324,7 +324,7 @@ if __name__ == "__main__":
         bar_w_valid = 0.6
 
         ax_valid.bar(X_POS, in_bound, bar_w_valid, label='Clean', color='white', hatch='///', edgecolor='black')
-        ax_valid.bar(X_POS, out_of_bound, bar_w_valid, bottom=in_bound, label='OOB', color='darkgrey', hatch='...', edgecolor='black')
+        ax_valid.bar(X_POS, out_of_bound, bar_w_valid, bottom=in_bound, label='OOB', color='white', hatch='...', edgecolor='black')
 
         midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
         
@@ -343,7 +343,7 @@ if __name__ == "__main__":
         ax_invalid = axs_invalid[mode_idx]
         bar_w_inv = 0.6
 
-        ax_invalid.bar(X_POS, enumeration, bar_w_inv, label='Enumeration', color='white', hatch='\\\\', edgecolor='black')
+        ax_invalid.bar(X_POS, enumeration, bar_w_inv, label='Enumeration', color='darkgrey', hatch='\\\\', edgecolor='black')
         ax_invalid.bar(X_POS, loop,        bar_w_inv, bottom=enumeration, label='Loop', color='darkgrey', hatch='oo', edgecolor='black')
 
         ax_invalid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
@@ -359,7 +359,7 @@ if __name__ == "__main__":
 
     valid_handles = [
         Patch(facecolor='white', edgecolor='black', hatch='///', label='Clean'),
-        Patch(facecolor='darkgrey', edgecolor='black', hatch='...', label='OOB'),
+        Patch(facecolor='white', edgecolor='black', hatch='...', label='OOB'),
     ]
     fig_valid.legend(
         handles=valid_handles,
@@ -371,7 +371,7 @@ if __name__ == "__main__":
     )
 
     invalid_handles = [
-        Patch(facecolor='white', edgecolor='black', hatch='\\\\', label='Enumeration'),
+        Patch(facecolor='darkgrey', edgecolor='black', hatch='\\\\', label='Enumeration'),
         Patch(facecolor='darkgrey', edgecolor='black', hatch='oo', label='Loop'),
     ]
     fig_invalid.legend(
