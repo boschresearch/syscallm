@@ -205,18 +205,40 @@ def update_hallucinatory_error_codes(model, llm_generated_values):
             counters[v] = counters.get(v, 0) + 1
     hallucinatory_error_codes[model] = list(counters.items())
 
+def compute_x_positions(models, temperatures):
+    n_temps = len(temperatures)
+    x = []
+    labels = []
+    for i, _ in enumerate(models):
+        for j, t in enumerate(temperatures):
+            x.append(i * (n_temps + 1) + j)
+            labels.append(t)
+    return np.array(x), labels, n_temps
+
 
 if __name__ == "__main__":
-    hallucinatory_error_codes = {model: [] for model in models}
     fig_valid, axs_valid = plt.subplots(nrows=2, figsize=(6, 8), sharex=True)
     fig_invalid, axs_invalid = plt.subplots(nrows=2, figsize=(6, 8), sharex=True)
+    
+    X_POS, TEMP_LABELS, N_TEMPS = compute_x_positions(models, temperature)
+    X_MIN, X_MAX = X_POS.min(), X_POS.max()
+    
+    hallucinatory_error_codes = {model: [] for model in models}
 
-    for mode in modes:
-        df_valid = pd.DataFrame(columns=['mode', 'model_name', 'run', 'temperature', 'total_count', 'not_usable_count', 'out_of_bound_count'])
-        df_invalid = pd.DataFrame(columns=['mode', 'model_name', 'run', 'temperature', 'loop_count', 'enumeration_count'])
+    for mode_idx, mode in enumerate(modes):
+        df_valid = pd.DataFrame(columns=[
+            'mode', 'model_name', 'run', 'temperature',
+            'total_count', 'not_usable_count', 'out_of_bound_count'
+        ])
+        df_invalid = pd.DataFrame(columns=[
+            'mode', 'model_name', 'run', 'temperature',
+            'loop_count', 'enumeration_count', 'blocked_count'
+        ])
 
         # directories json data for each temperature
-        temperature_dirs = [os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature]
+        temperature_dirs = [
+            os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature
+        ]
 
         for temp_dir, temp in zip(temperature_dirs, temperature):
             for model in models:
@@ -283,142 +305,84 @@ if __name__ == "__main__":
             aggfunc='mean'
         ).reset_index()
         df_invalid_pivot = df_invalid_pivot.infer_objects(copy=False).fillna(0)
+
+        valid_sorted = df_valid_pivot.sort_values(['model_name', 'temperature'])
+        in_bound     = valid_sorted['in_bound_percentage'].to_numpy()
+        out_of_bound = valid_sorted['out_of_bound_percentage'].to_numpy()
+        not_usable   = valid_sorted['not_usable_percentage'].to_numpy()
+
+        invalid_sorted = df_invalid_pivot.sort_values(['model_name', 'temperature'])
+        enumeration  = invalid_sorted['enumeration_percentage'].to_numpy()
+        loop         = invalid_sorted['loop_percentage'].to_numpy()
+        blocked      = invalid_sorted['blocked_percentage'].to_numpy()
         
-        ################################################# PLOT VALID COVERAGE #################################################
+        # ---------------- VALID subplot ----------------
+        ax_valid = axs_valid[mode_idx]
+        bar_w_valid = 0.6
 
-        # set up the plot for valid coverage (one subplot per mode)
-        ax_valid = axs_valid[modes.index(mode)]
-        bar_width = 0.6
-        n_temps = len(temperature)
-        x = []
-        temp_labels = []
-        for i, model in enumerate(models):
-            for j, temp in enumerate(temperature):
-                x.append(i * (n_temps + 1) + j)
-                temp_labels.append(temp)
+        ax_valid.bar(X_POS, in_bound, bar_w_valid, label='In-Bounds', color='skyblue')
+        ax_valid.bar(X_POS, out_of_bound, bar_w_valid, bottom=in_bound, label='OOB', color='gold')
+        ax_valid.bar(X_POS, not_usable, bar_w_valid, bottom=in_bound + out_of_bound, label='Not Usable', color='salmon')
 
-        not_usable = df_valid_pivot['not_usable_percentage'].values
-        out_of_bound = df_valid_pivot['out_of_bound_percentage'].values
-        in_bound = df_valid_pivot['in_bound_percentage'].values
-
-        ax_valid.bar(x, in_bound, bar_width, label='In-Bounds', color='skyblue')
-        ax_valid.bar(x, out_of_bound, bar_width, bottom=in_bound, label='OOB-Fixable', color='gold')
-        ax_valid.bar(x, not_usable, bar_width, bottom=np.add(in_bound, out_of_bound), label='Not Usable', color='salmon')
-
+        # small labels for the tiny top segment (optional)
         for i, val in enumerate(not_usable):
             if val > 0:
                 bar_top = in_bound[i] + out_of_bound[i] + val
-                ax_valid.text(
-                    x[i],
-                    bar_top + 0.5,
-                    f'{val:.1f}%\nNot Usable',
-                    ha='center',
-                    va='bottom',
-                    fontsize=10
-                )
+                ax_valid.text(X_POS[i], bar_top + 0.5, f'{val:.1f}%', ha='center', va='bottom', fontsize=9)
 
-        ax_valid.set_xticks(x)
-        ax_valid.set_xticklabels(temp_labels, fontsize=11)
-        ax_valid.set_ylabel('Percentage (%)', fontsize=13)
-        ax_valid.set_ylim(0, 110)
+        ax_valid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
+        midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
+        
+        if mode_idx == len(modes) - 1:
+            ax_valid.set_xticks(X_POS)
+            ax_valid.set_xticklabels(TEMP_LABELS, fontsize=10)
+            for i, model in enumerate(models):
+                ax_valid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_valid.transData)
+        else:
+            ax_valid.tick_params(labelbottom=False)
+
+        ax_valid.set_ylabel('Percentage (%)', fontsize=12)
+        ax_valid.set_ylim(0, 105)
         ax_valid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax_valid.set_yticks(range(0, 101, 10))
-        group_width = n_temps + 1
-        midpoints = [i * group_width + (n_temps - 1) / 2 for i in range(len(models))]
-        for i, model in enumerate(models):
-            ax_valid.text(
-            midpoints[i],
-            -7,
-            model,
-            ha='center',
-            va='top',
-            fontsize=10,
-            transform=ax_valid.transData
-            )
-        ax_valid.set_title(f"Valid Coverage - {mode}", fontsize=14)
+        ax_valid.set_title(f"Valid Coverage — {mode}", fontsize=13)
 
-        ################################################# PLOT INVALID CAUSES #################################################
+        # ---------------- INVALID subplot ----------------
+        ax_invalid = axs_invalid[mode_idx]
+        bar_w_inv = 0.6
 
-        # set up the plot for invalid causes (one subplot per mode)
-        ax_invalid = axs_invalid[modes.index(mode)]
-        bar_width = 0.4
-        n_temps = len(temperature)
-        x = []
-        temp_labels = []
-        for i, model in enumerate(models):
-            for j, temp in enumerate(temperature):
-                x.append(i * (n_temps + 1) + j)
-                temp_labels.append(temp)
+        ax_invalid.bar(X_POS, enumeration, bar_w_inv, label='Enumeration', color='mediumseagreen')
+        ax_invalid.bar(X_POS, loop,        bar_w_inv, bottom=enumeration, label='Loop',        color='crimson')
+        ax_invalid.bar(X_POS, blocked,     bar_w_inv, bottom=enumeration + loop, label='Blocked', color='#9400D3')
 
-        loop = np.array(df_invalid_pivot['loop_percentage'].values)
-        enumeration = np.array(df_invalid_pivot['enumeration_percentage'].values)
-        blocked = np.array(df_invalid_pivot['blocked_percentage'].values)
+        # tiny labels for small bars (optional)
+        for i, (ve, vl, vb) in enumerate(zip(enumeration, loop, blocked)):
+            if 0.0 < ve < 5.0:
+                ax_invalid.text(X_POS[i], ve + 0.5, f'{ve:.2f}%', ha='center', va='bottom', fontsize=9, color='mediumseagreen')
+            if 0.0 < vl < 5.0:
+                ax_invalid.text(X_POS[i], ve + vl + 0.5, f'{vl:.2f}%', ha='center', va='bottom', fontsize=9, color='crimson')
+            if 0.0 < vb < 5.0:
+                ax_invalid.text(X_POS[i], ve + vl + vb + 0.5, f'{vb:.2f}%', ha='center', va='bottom', fontsize=9, color='darkviolet')
 
-        ax_invalid.bar(x, enumeration, bar_width, label='Enumeration', color='mediumseagreen')
-        ax_invalid.bar(x, loop, bar_width, bottom=enumeration, label='Loop', color='crimson')
-        ax_invalid.bar(x, blocked, bar_width, bottom=enumeration + loop, label='Blocked', color='#9400D3')
+        ax_invalid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
+        if mode_idx == len(modes) - 1:
+            ax_invalid.set_xticks(X_POS)
+            ax_invalid.set_xticklabels(TEMP_LABELS, fontsize=10)
+            for i, model in enumerate(models):
+                ax_invalid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_invalid.transData)
+        else:
+            ax_invalid.tick_params(labelbottom=False)
 
-        for i, (val_enum, val_loop, val_block) in enumerate(zip(enumeration, loop, blocked)):
-            if val_enum > 0.0 and val_enum < 5.0:
-                bar_top = val_enum
-                ax_invalid.text(
-                    x[i],
-                    bar_top + 0.5,
-                    f'{val_enum:.2f}%',
-                    ha='center',
-                    va='bottom',
-                    fontsize=10,
-                    color='mediumseagreen',
-                    path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
-                )
-            if val_loop > 0.0 and val_loop < 5.0:
-                bar_top = val_enum + val_loop
-                ax_invalid.text(
-                    x[i],
-                    bar_top + 0.5,
-                    f'{val_loop:.2f}%',
-                    ha='center',
-                    va='bottom',
-                    fontsize=10,
-                    color='crimson',
-                    path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
-                )
-            if val_block > 0.0 and val_block < 5.0:
-                bar_top = float(val_enum) + float(val_loop) + float(val_block)
-                ax_invalid.text(
-                    x[i],
-                    bar_top + 0.5,
-                    f'{val_block:.2f}%',
-                    ha='center',
-                    va='bottom',
-                    fontsize=10,
-                    color='darkviolet',
-                    path_effects=[plt.matplotlib.patheffects.withStroke(linewidth=0.7, foreground='black')]
-                )
-
-        ax_invalid.set_xticks(x)
-        ax_invalid.set_xticklabels(temp_labels, fontsize=10)
-        ax_invalid.set_ylabel('Percentage (%)', fontsize=13)
+        ax_invalid.set_ylabel('Percentage (%)', fontsize=12)
         ax_invalid.set_ylim(0, 100)
         ax_invalid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
-        ax_invalid.set_yticks(range(0, 100, 10))
-        group_width = n_temps + 1
-        midpoints = [i * group_width + (n_temps - 1) / 2 for i in range(len(models))]
-        for i, model in enumerate(models):
-            ax_invalid.text(
-            midpoints[i],
-            -7,
-            model,
-            ha='center',
-            va='top',
-            fontsize=10,
-            transform=ax_invalid.transData
-            )
-        ax_invalid.set_title(f"Invalid Causes - {mode}", fontsize=14)
+        ax_invalid.set_yticks(range(0, 101, 10))
+        ax_invalid.set_title(f"Invalid Causes — {mode}", fontsize=13)
+
 
     valid_handles = [
         Patch(color='skyblue', label='In-Bounds'),
-        Patch(color='gold',    label='OOB-Fixable'),
+        Patch(color='gold',    label='OOB'),
         Patch(color='salmon',  label='Not Usable'),
     ]
     fig_valid.legend(
