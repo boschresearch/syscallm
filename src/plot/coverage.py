@@ -315,20 +315,16 @@ if __name__ == "__main__":
         enumeration  = invalid_sorted['enumeration_percentage'].to_numpy()
         loop         = invalid_sorted['loop_percentage'].to_numpy()
         blocked      = invalid_sorted['blocked_percentage'].to_numpy()
+
+        print("Not Usable Percentages:", not_usable)
+        print("Blocked Percentages:", blocked)
         
         # ---------------- VALID subplot ----------------
         ax_valid = axs_valid[mode_idx]
         bar_w_valid = 0.6
 
-        ax_valid.bar(X_POS, in_bound, bar_w_valid, label='In-Bounds', color='skyblue')
-        ax_valid.bar(X_POS, out_of_bound, bar_w_valid, bottom=in_bound, label='OOB', color='gold')
-        ax_valid.bar(X_POS, not_usable, bar_w_valid, bottom=in_bound + out_of_bound, label='Not Usable', color='salmon')
-
-        # small labels for the tiny top segment (optional)
-        for i, val in enumerate(not_usable):
-            if val > 0:
-                bar_top = in_bound[i] + out_of_bound[i] + val
-                ax_valid.text(X_POS[i], bar_top + 0.5, f'{val:.1f}%\nNot Usable', ha='center', va='bottom', fontsize=8)
+        ax_valid.bar(X_POS, in_bound, bar_w_valid, label='Clean', color='white', hatch='///', edgecolor='black')
+        ax_valid.bar(X_POS, out_of_bound, bar_w_valid, bottom=in_bound, label='OOB', color='darkgrey', hatch='...', edgecolor='black')
 
         midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
         
@@ -336,9 +332,9 @@ if __name__ == "__main__":
         ax_valid.set_xticks(X_POS)
         ax_valid.set_xticklabels(TEMP_LABELS, fontsize=10)
         for i, model in enumerate(models):
-            ax_valid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_valid.transData)
+            ax_valid.text(midpoints[i], -10, model, ha='center', va='top', fontsize=10, transform=ax_valid.transData)
 
-        ax_valid.set_ylim(0, 105)
+        ax_valid.set_ylim(0, 100)
         ax_valid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax_valid.set_yticks(range(0, 101, 10))
         ax_valid.set_title(f"{mode}", fontsize=13)
@@ -347,24 +343,14 @@ if __name__ == "__main__":
         ax_invalid = axs_invalid[mode_idx]
         bar_w_inv = 0.6
 
-        ax_invalid.bar(X_POS, enumeration, bar_w_inv, label='Enumeration', color='mediumseagreen')
-        ax_invalid.bar(X_POS, loop,        bar_w_inv, bottom=enumeration, label='Loop',        color='crimson')
-        ax_invalid.bar(X_POS, blocked,     bar_w_inv, bottom=enumeration + loop, label='Blocked', color='#9400D3')
-
-        # tiny labels for small bars (optional)
-        for i, (ve, vl, vb) in enumerate(zip(enumeration, loop, blocked)):
-            if 0.0 < ve < 5.0:
-                ax_invalid.text(X_POS[i], ve + 0.5, f'{ve:.2f}%', ha='center', va='bottom', fontsize=8, color='mediumseagreen')
-            if 0.0 < vl < 5.0:
-                ax_invalid.text(X_POS[i], ve + vl + 0.5, f'{vl:.2f}%', ha='center', va='bottom', fontsize=8, color='crimson')
-            if 0.0 < vb < 5.0:
-                ax_invalid.text(X_POS[i], ve + vl + vb + 0.5, f'{vb:.2f}%', ha='center', va='bottom', fontsize=8, color='darkviolet')
+        ax_invalid.bar(X_POS, enumeration, bar_w_inv, label='Enumeration', color='white', hatch='\\\\', edgecolor='black')
+        ax_invalid.bar(X_POS, loop,        bar_w_inv, bottom=enumeration, label='Loop', color='darkgrey', hatch='oo', edgecolor='black')
 
         ax_invalid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
         ax_invalid.set_xticks(X_POS)
         ax_invalid.set_xticklabels(TEMP_LABELS, fontsize=10)
         for i, model in enumerate(models):
-            ax_invalid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_invalid.transData)
+            ax_invalid.text(midpoints[i], -9, model, ha='center', va='top', fontsize=10, transform=ax_invalid.transData)
 
         ax_invalid.set_ylim(0, 100)
         ax_invalid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
@@ -372,9 +358,8 @@ if __name__ == "__main__":
         ax_invalid.set_title(f"{mode}", fontsize=13)
 
     valid_handles = [
-        Patch(color='skyblue', label='In-Bounds'),
-        Patch(color='gold',    label='OOB'),
-        Patch(color='salmon',  label='Not Usable'),
+        Patch(facecolor='white', edgecolor='black', hatch='///', label='Clean'),
+        Patch(facecolor='darkgrey', edgecolor='black', hatch='...', label='OOB'),
     ]
     fig_valid.legend(
         handles=valid_handles,
@@ -386,9 +371,8 @@ if __name__ == "__main__":
     )
 
     invalid_handles = [
-        Patch(color='mediumseagreen', label='Enumeration'),
-        Patch(color='crimson',        label='Loop'),
-        Patch(color='#9400D3',        label='Blocked'),
+        Patch(facecolor='white', edgecolor='black', hatch='\\\\', label='Enumeration'),
+        Patch(facecolor='darkgrey', edgecolor='black', hatch='oo', label='Loop'),
     ]
     fig_invalid.legend(
         handles=invalid_handles,
@@ -399,7 +383,7 @@ if __name__ == "__main__":
         fontsize=10
     )
 
-    fig_valid.tight_layout(rect=[0, 0.08, 1, 1])
+    fig_valid.tight_layout()
     fig_valid.savefig("figures/coverage_valid.png", dpi=300)
-    fig_invalid.tight_layout(rect=[0, 0.08, 1, 1])
+    fig_invalid.tight_layout()
     fig_invalid.savefig("figures/coverage_invalid.png", dpi=300)
