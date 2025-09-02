@@ -217,8 +217,8 @@ def compute_x_positions(models, temperatures):
 
 
 if __name__ == "__main__":
-    fig_valid, axs_valid = plt.subplots(nrows=2, figsize=(6, 8), sharex=True)
-    fig_invalid, axs_invalid = plt.subplots(nrows=2, figsize=(6, 8), sharex=True)
+    fig_valid, axs_valid = plt.subplots(ncols=2, figsize=(11, 4), sharey=True)
+    fig_invalid, axs_invalid = plt.subplots(ncols=2, figsize=(11, 4), sharey=True)
     
     X_POS, TEMP_LABELS, N_TEMPS = compute_x_positions(models, temperature)
     X_MIN, X_MAX = X_POS.min(), X_POS.max()
@@ -328,7 +328,7 @@ if __name__ == "__main__":
         for i, val in enumerate(not_usable):
             if val > 0:
                 bar_top = in_bound[i] + out_of_bound[i] + val
-                ax_valid.text(X_POS[i], bar_top + 0.5, f'{val:.1f}%', ha='center', va='bottom', fontsize=9)
+                ax_valid.text(X_POS[i], bar_top + 0.5, f'{val:.1f}%\nNot Usable', ha='center', va='bottom', fontsize=8)
 
         midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
         
@@ -338,11 +338,10 @@ if __name__ == "__main__":
         for i, model in enumerate(models):
             ax_valid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_valid.transData)
 
-        ax_valid.set_ylabel('Percentage (%)', fontsize=12)
         ax_valid.set_ylim(0, 105)
         ax_valid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax_valid.set_yticks(range(0, 101, 10))
-        ax_valid.set_title(f"Valid Coverage — {mode}", fontsize=13)
+        ax_valid.set_title(f"{mode}", fontsize=13)
 
         # ---------------- INVALID subplot ----------------
         ax_invalid = axs_invalid[mode_idx]
@@ -355,11 +354,11 @@ if __name__ == "__main__":
         # tiny labels for small bars (optional)
         for i, (ve, vl, vb) in enumerate(zip(enumeration, loop, blocked)):
             if 0.0 < ve < 5.0:
-                ax_invalid.text(X_POS[i], ve + 0.5, f'{ve:.2f}%', ha='center', va='bottom', fontsize=9, color='mediumseagreen')
+                ax_invalid.text(X_POS[i], ve + 0.5, f'{ve:.2f}%', ha='center', va='bottom', fontsize=8, color='mediumseagreen')
             if 0.0 < vl < 5.0:
-                ax_invalid.text(X_POS[i], ve + vl + 0.5, f'{vl:.2f}%', ha='center', va='bottom', fontsize=9, color='crimson')
+                ax_invalid.text(X_POS[i], ve + vl + 0.5, f'{vl:.2f}%', ha='center', va='bottom', fontsize=8, color='crimson')
             if 0.0 < vb < 5.0:
-                ax_invalid.text(X_POS[i], ve + vl + vb + 0.5, f'{vb:.2f}%', ha='center', va='bottom', fontsize=9, color='darkviolet')
+                ax_invalid.text(X_POS[i], ve + vl + vb + 0.5, f'{vb:.2f}%', ha='center', va='bottom', fontsize=8, color='darkviolet')
 
         ax_invalid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
         ax_invalid.set_xticks(X_POS)
@@ -367,11 +366,10 @@ if __name__ == "__main__":
         for i, model in enumerate(models):
             ax_invalid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_invalid.transData)
 
-        ax_invalid.set_ylabel('Percentage (%)', fontsize=12)
         ax_invalid.set_ylim(0, 100)
         ax_invalid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax_invalid.set_yticks(range(0, 101, 10))
-        ax_invalid.set_title(f"Invalid Causes — {mode}", fontsize=13)
+        ax_invalid.set_title(f"{mode}", fontsize=13)
 
     valid_handles = [
         Patch(color='skyblue', label='In-Bounds'),
@@ -383,7 +381,7 @@ if __name__ == "__main__":
         loc='upper left',
         ncol=1,
         frameon=True,
-        bbox_to_anchor=(0.11, 0.955),
+        bbox_to_anchor=(0.04, 0.92),
         fontsize=10
     )
 
@@ -397,7 +395,7 @@ if __name__ == "__main__":
         loc='upper left',
         ncol=1,
         frameon=True,
-        bbox_to_anchor=(0.11, 0.955),
+        bbox_to_anchor=(0.04, 0.92),
         fontsize=10
     )
 
