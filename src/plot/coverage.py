@@ -5,6 +5,7 @@ import errno
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import matplotlib.patheffects as path_effects
 from collections import Counter
 import sys
@@ -207,8 +208,8 @@ def update_hallucinatory_error_codes(model, llm_generated_values):
 
 if __name__ == "__main__":
     hallucinatory_error_codes = {model: [] for model in models}
-    fig_valid, axs_valid = plt.subplots(nrows=2, figsize=(10, 10), sharex=True)
-    fig_invalid, axs_invalid = plt.subplots(nrows=2, figsize=(10, 10), sharex=True)
+    fig_valid, axs_valid = plt.subplots(nrows=2, figsize=(6, 8), sharex=True)
+    fig_invalid, axs_invalid = plt.subplots(nrows=2, figsize=(6, 8), sharex=True)
 
     for mode in modes:
         df_valid = pd.DataFrame(columns=['mode', 'model_name', 'run', 'temperature', 'total_count', 'not_usable_count', 'out_of_bound_count'])
@@ -287,7 +288,7 @@ if __name__ == "__main__":
 
         # set up the plot for valid coverage (one subplot per mode)
         ax_valid = axs_valid[modes.index(mode)]
-        bar_width = 0.4
+        bar_width = 0.6
         n_temps = len(temperature)
         x = []
         temp_labels = []
@@ -322,7 +323,6 @@ if __name__ == "__main__":
         ax_valid.set_ylim(0, 110)
         ax_valid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax_valid.set_yticks(range(0, 101, 10))
-        ax_valid.legend(fontsize=13)
         group_width = n_temps + 1
         midpoints = [i * group_width + (n_temps - 1) / 2 for i in range(len(models))]
         for i, model in enumerate(models):
@@ -332,7 +332,7 @@ if __name__ == "__main__":
             model,
             ha='center',
             va='top',
-            fontsize=12,
+            fontsize=10,
             transform=ax_valid.transData
             )
         ax_valid.set_title(f"Valid Coverage - {mode}", fontsize=14)
@@ -397,12 +397,11 @@ if __name__ == "__main__":
                 )
 
         ax_invalid.set_xticks(x)
-        ax_invalid.set_xticklabels(temp_labels, fontsize=11)
+        ax_invalid.set_xticklabels(temp_labels, fontsize=10)
         ax_invalid.set_ylabel('Percentage (%)', fontsize=13)
         ax_invalid.set_ylim(0, 100)
         ax_invalid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax_invalid.set_yticks(range(0, 100, 10))
-        ax_invalid.legend(fontsize=13)
         group_width = n_temps + 1
         midpoints = [i * group_width + (n_temps - 1) / 2 for i in range(len(models))]
         for i, model in enumerate(models):
@@ -412,12 +411,39 @@ if __name__ == "__main__":
             model,
             ha='center',
             va='top',
-            fontsize=12,
+            fontsize=10,
             transform=ax_invalid.transData
             )
         ax_invalid.set_title(f"Invalid Causes - {mode}", fontsize=14)
 
-    # adjust layout and save figures after all modes are plotted
+    valid_handles = [
+        Patch(color='skyblue', label='In-Bounds'),
+        Patch(color='gold',    label='OOB-Fixable'),
+        Patch(color='salmon',  label='Not Usable'),
+    ]
+    fig_valid.legend(
+        handles=valid_handles,
+        loc='upper left',
+        ncol=1,
+        frameon=True,
+        bbox_to_anchor=(0.11, 0.955),
+        fontsize=10
+    )
+
+    invalid_handles = [
+        Patch(color='mediumseagreen', label='Enumeration'),
+        Patch(color='crimson',        label='Loop'),
+        Patch(color='#9400D3',        label='Blocked'),
+    ]
+    fig_invalid.legend(
+        handles=invalid_handles,
+        loc='upper left',
+        ncol=1,
+        frameon=True,
+        bbox_to_anchor=(0.11, 0.955),
+        fontsize=10
+    )
+
     fig_valid.tight_layout(rect=[0, 0.08, 1, 1])
     fig_valid.savefig("figures/coverage_valid.png", dpi=300)
     fig_invalid.tight_layout(rect=[0, 0.08, 1, 1])
