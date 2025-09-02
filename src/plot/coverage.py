@@ -330,16 +330,13 @@ if __name__ == "__main__":
                 bar_top = in_bound[i] + out_of_bound[i] + val
                 ax_valid.text(X_POS[i], bar_top + 0.5, f'{val:.1f}%', ha='center', va='bottom', fontsize=9)
 
-        ax_valid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
         midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
         
-        if mode_idx == len(modes) - 1:
-            ax_valid.set_xticks(X_POS)
-            ax_valid.set_xticklabels(TEMP_LABELS, fontsize=10)
-            for i, model in enumerate(models):
-                ax_valid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_valid.transData)
-        else:
-            ax_valid.tick_params(labelbottom=False)
+        ax_valid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
+        ax_valid.set_xticks(X_POS)
+        ax_valid.set_xticklabels(TEMP_LABELS, fontsize=10)
+        for i, model in enumerate(models):
+            ax_valid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_valid.transData)
 
         ax_valid.set_ylabel('Percentage (%)', fontsize=12)
         ax_valid.set_ylim(0, 105)
@@ -365,20 +362,16 @@ if __name__ == "__main__":
                 ax_invalid.text(X_POS[i], ve + vl + vb + 0.5, f'{vb:.2f}%', ha='center', va='bottom', fontsize=9, color='darkviolet')
 
         ax_invalid.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
-        if mode_idx == len(modes) - 1:
-            ax_invalid.set_xticks(X_POS)
-            ax_invalid.set_xticklabels(TEMP_LABELS, fontsize=10)
-            for i, model in enumerate(models):
-                ax_invalid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_invalid.transData)
-        else:
-            ax_invalid.tick_params(labelbottom=False)
+        ax_invalid.set_xticks(X_POS)
+        ax_invalid.set_xticklabels(TEMP_LABELS, fontsize=10)
+        for i, model in enumerate(models):
+            ax_invalid.text(midpoints[i], -7, model, ha='center', va='top', fontsize=10, transform=ax_invalid.transData)
 
         ax_invalid.set_ylabel('Percentage (%)', fontsize=12)
         ax_invalid.set_ylim(0, 100)
         ax_invalid.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax_invalid.set_yticks(range(0, 101, 10))
         ax_invalid.set_title(f"Invalid Causes — {mode}", fontsize=13)
-
 
     valid_handles = [
         Patch(color='skyblue', label='In-Bounds'),
