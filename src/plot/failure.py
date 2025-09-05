@@ -33,13 +33,6 @@ palette = {
     'No Changes': colors[4]
 }
 
-def read_data(llm_file, random_file):
-    # read data from CSV files
-    llm_data = pd.read_csv(llm_file)
-    random_data = pd.read_csv(random_file)
-
-    return llm_data, random_data
-
 
 def add_run_column(data, run):
     # add a 'run' column to the data
@@ -583,7 +576,8 @@ def main():
                 random_generated_file = os.path.join(result_dir, f'result_random_{baseline}{r}.csv')
 
                 # read data
-                llm_data, random_data = read_data(llm_generated_file, random_generated_file)
+                llm_data = pd.read_csv(llm_generated_file)
+                random_data = pd.read_csv(random_generated_file)
 
                 # drop 'timeout' column
                 llm_data = llm_data.drop(columns=['timeout'])
