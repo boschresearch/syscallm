@@ -1,4 +1,5 @@
 import os
+import errno
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -9,18 +10,18 @@ import json
 import utils.app_syscalls as app_syscalls
 
 runs = config.runs
-temperature = config.temperature[0]
-mode = config.mode
-aut = config.aut
-result_dir = config.result_dir
+modes = config.modes
+auts = config.auts
 baseline = config.baseline
-llm_config = os.path.join(config.config_dir, f"temperature_{temperature}", "gpt-4o")
-random_config = os.path.join(config.config_random_log_dir, f"temperature_{temperature}", "gpt-4o")
+data_dir = config.data_dir
+
+temperature = "0.5"
 
 plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
 failure_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
 outcome_types = ['no_changes'] + failure_types
+renamed_failure_types = ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
 renamed_outcome_types = ['No Changes', 'App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
 missing_syscalls = ['rseq', 'clock_adjtime', 'epoll_ctl_old', 'epoll_wait_old', 'io_pgetevents', 'timerfd']
 
@@ -80,35 +81,30 @@ def calculate_statistics(llm, random):
     return llm_counts, llm_percentages, random_counts, random_percentages
 
 
-def print_statistics(llm, random):
+def print_statistics(aut, mode, llm, random):
+    print(f"-------------------- Statistics for {aut} in {mode} mode --------------------")
+
     # calculate failure counts and percentages
     llm_counts, llm_percentages, random_counts, random_percentages = calculate_statistics(llm, random)
 
     # average count and percentage across runs
     avg_llm_percentages = llm_percentages.mean().round(2)
     avg_random_percentages = random_percentages.mean().round(2)
+
     
     print(f"Total test counts for each {llm['run'].value_counts()}")    
     print(f"---------------------------------------------------------------")
     print(f"SyscaLLM (GPT-4o)-Generated")
     print("Counts:")
     print(llm_counts)
-    print("Percentages:")
-    print(llm_percentages)
     print("Average Counts:")
     print(llm_counts.mean().round(2).to_frame().T)
-    print("Average Percentages:")
-    print(avg_llm_percentages.to_frame().T)
     print(f"---------------------------------------------------------------")
     print(f"Random-Generated")
     print("Counts:")
     print(random_counts)
-    print("Percentages:")
-    print(random_percentages)
     print("Average Counts:")
     print(random_counts.mean().round(2).to_frame().T)
-    print("Average Percentages:")
-    print(avg_random_percentages.to_frame().T)
     print(f"---------------------------------------------------------------")
 
 
@@ -121,7 +117,7 @@ def print_silent_data_corruption_syscalls(llm, random):
         print(f"Unique syscalls with silent data corruption (Random): {random_silent_data_corruption}")
 
 
-def plot_outcome_per_syscall(data1, data2):
+def plot_outcome_per_syscall(aut, mode, data1, data2):
     def aggregate_and_compute_failures(df, label):
         agg = df.groupby('syscall')[outcome_types].sum().div(runs).reset_index()
         agg['type'] = label
@@ -179,9 +175,8 @@ def plot_outcome_per_syscall(data1, data2):
     plt.savefig(f"figures/outcome_per_syscall_{aut}_{mode}.png", dpi=300)
 
 
-def plot_failure_per_syscall(data1, data2):
-    titles = ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
-    outcome_labels = dict(zip(failure_types, titles))
+def plot_failure_per_syscall(aut, mode, data1, data2):
+    outcome_labels = dict(zip(failure_types, renamed_failure_types))
 
     def aggregate_data(df, label):
         agg = df.groupby('syscall')[failure_types].sum().div(runs).reset_index()
@@ -197,15 +192,15 @@ def plot_failure_per_syscall(data1, data2):
     # reshape for plotting
     df = df.melt(
         id_vars=['syscall', 'type'],
-        value_vars=titles,
+        value_vars=renamed_failure_types,
         var_name='outcome_type',
         value_name='count'
     )
 
     # setup subplots
-    fig, axs = plt.subplots(1, len(titles), figsize=(10, 6), sharey=True)
+    fig, axs = plt.subplots(1, len(renamed_failure_types), figsize=(10, 6), sharey=True)
 
-    for i, outcome in enumerate(titles):
+    for i, outcome in enumerate(renamed_failure_types):
         ax = axs[i]
         sub_df = df[df['outcome_type'] == outcome]
         pivot_df = sub_df.pivot_table(
@@ -219,7 +214,7 @@ def plot_failure_per_syscall(data1, data2):
             kind='barh',
             ax=ax,
             color=['#FF8C00', '#6A5ACD'],
-            legend=(i == len(titles) - 1),
+            legend=(i == len(renamed_failure_types) - 1),
             logx=(outcome in ['App Crash', 'App Hang', 'Error Exit'])
         )
 
@@ -228,7 +223,7 @@ def plot_failure_per_syscall(data1, data2):
         ax.grid(linestyle='--', alpha=0.7)
         ax.invert_yaxis()
 
-        if i == len(titles) - 1:
+        if i == len(renamed_failure_types) - 1:
             ax.legend(title=None, loc='upper right')
 
     fig.supxlabel('Count', fontsize=14)
@@ -236,7 +231,7 @@ def plot_failure_per_syscall(data1, data2):
     plt.savefig(f"figures/failure_per_syscall_{aut}_{mode}.png", dpi=300)
 
 
-def plot_silent_data_corruption_by_syscall(llm, random):
+def plot_silent_data_corruption_by_syscall(aut, mode, llm, random):
     llm_counts = llm[llm['silent_data_corruption'] == True]['syscall'].value_counts()
     random_counts = random[random['silent_data_corruption'] == True]['syscall'].value_counts()
 
@@ -263,15 +258,15 @@ def plot_silent_data_corruption_by_syscall(llm, random):
 
     plt.xlabel(None)
     plt.ylabel('Count', fontsize=18)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
+    plt.xticks(fontsize=12, rotation=15)
+    plt.yticks(fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.legend(fontsize=12)
     plt.tight_layout()
     plt.savefig(f"figures/silent_data_corruption_{aut}_{mode}.png", dpi=300)
 
 
-def plot_outcome(data1, data2):
+def plot_outcome(aut, mode, data1, data2):
     # compute total test cases per run
     total_count = data1['run'].value_counts()
 
@@ -333,7 +328,7 @@ def plot_outcome(data1, data2):
     plt.savefig(f"figures/outcome_overview_{aut}_{mode}.png", dpi=300)
 
 
-def plot_test_case_distribution(data):
+def plot_test_case_distribution(aut, mode, data):
     data = data.copy()
 
     # sum outcomes by run and syscall
@@ -386,12 +381,43 @@ def plot_test_case_distribution(data):
 def extract_retval(config_path):
     try:
         with open(config_path, 'r') as file:
+            # load json file
             config_data = json.load(file)
+
+            # get strace parameters
             strace_param = config_data['syslog_monitor_config']['faults'][0]
+
+            # get retval value
             retval_start = strace_param.find("retval=") + len("retval=")
             retval_end = strace_param.find(":", retval_start)
             retval = strace_param[retval_start:retval_end]
+
             return int(retval)
+    except Exception:
+        return 0
+    
+
+def extract_error(config_path):
+    try:
+        with open(config_path, 'r') as file:
+            # load json file
+            config_data = json.load(file)
+
+            # get strace parameters
+            strace_param = config_data['syslog_monitor_config']['faults'][0]
+
+            # get error value
+            error_start = strace_param.find("error=") + len("error=")
+            error_end = strace_param.find(":", error_start)
+            error_str = strace_param[error_start:error_end]
+
+            if error_str.isdigit():
+                error_num = int(error_str)
+            else:
+                # convert error string to errno number
+                error_num = getattr(errno, error_str, 0)
+
+            return error_num
     except Exception:
         return 0
     
@@ -399,27 +425,41 @@ def extract_retval(config_path):
 def extract_when(config_path):
     try:
         with open(config_path, 'r') as file:
+            # load json file
             config_data = json.load(file)
+
+            # get strace parameters
             strace_param = config_data['syslog_monitor_config']['faults'][0]
+
+            # get when value
             when_start = strace_param.find("when=") + len("when=")
             when_end = strace_param.find("..", when_start)
             when = strace_param[when_start:when_end]
+
             return int(when)
     except Exception:
         return 0
     
 
-def process_dataset(data, config_base, result_types):
+def process_dataset(data, mode, config_base, result_types):
     dfs = {}
     for res in result_types:
         df = data[data[res] == True].copy()
         if df.empty:
-            df['retval'] = pd.Series(dtype=int)
+            df['val'] = pd.Series(dtype=int)
+            df['when'] = pd.Series(dtype=int)
         else:
-            df['retval'] = df.apply(
-                lambda row: extract_retval(f"{config_base}/run{row['run']}/{row['id']}.json"),
-                axis=1
-            )
+            if mode == "success":
+                df['val'] = df.apply(
+                    lambda row: extract_retval(f"{config_base}/run{row['run']}/{row['id']}.json"),
+                    axis=1
+                )
+            elif mode == "error_code":
+                df['val'] = df.apply(
+                    lambda row: extract_error(f"{config_base}/run{row['run']}/{row['id']}.json"),
+                    axis=1
+                )
+
             df['when'] = df.apply(
                 lambda row: extract_when(f"{config_base}/run{row['run']}/{row['id']}.json"),
                 axis=1
@@ -428,9 +468,7 @@ def process_dataset(data, config_base, result_types):
     return dfs
 
 
-def plot_error_instances(data1, data2):
-    error_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
-    titles = ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
+def plot_error_instances(aut, mode, llm_config, random_config, data1, data2):
     datasets = [
         ('SyscaLLM (GPT-4o)', data1, llm_config),
         ('Random', data2, random_config)
@@ -438,7 +476,7 @@ def plot_error_instances(data1, data2):
 
     dfs = {}
     for label, data, config in datasets:
-        dataset_dfs = process_dataset(data, config, error_types)
+        dataset_dfs = process_dataset(data, mode, config, failure_types)
         for err, df in dataset_dfs.items():
             dfs[(label, err)] = df
 
@@ -451,20 +489,21 @@ def plot_error_instances(data1, data2):
 
     fig, axs = plt.subplots(2, 4, figsize=(18, 10), sharex=True, sharey=True)
     for row, (label, _, _) in enumerate(datasets):
-        for col, err in enumerate(error_types):
+        for col, err in enumerate(failure_types):
             ax = axs[row, col]
             df = dfs[(label, err)]
+
             scatter = sns.scatterplot(
                 data=df,
-                x='retval',
+                x='val',
                 y='syscall',
                 hue='when',
                 palette='viridis',
-                legend=(row == 0 and col == len(error_types) - 1),
+                legend=(row == 0 and col == len(failure_types) - 1),
                 ax=ax
             )
             if row == 0:
-                ax.set_title(titles[col], fontsize=14)
+                ax.set_title(renamed_failure_types[col], fontsize=14)
             if col == 0:
                 ax.set_ylabel(label, fontsize=13)
             else:
@@ -476,17 +515,17 @@ def plot_error_instances(data1, data2):
             ax.grid(linestyle='--', alpha=0.7)
 
     handles, labels = axs[0, -1].get_legend_handles_labels()
-    if handles:
-        fig.legend(handles, labels, title='when', loc='upper right', bbox_to_anchor=(1.04, 0.95), fontsize=12, title_fontsize=13)
+    fig.legend(handles, labels, title='when', loc='upper right', bbox_to_anchor=(1.04, 0.95), fontsize=12, title_fontsize=13)
 
     fig.supxlabel('Return Value (log scale)', fontsize=15)
-    plt.tight_layout()
+    xlabel = 'Error Code (log scale)' if mode == 'error_code' else 'Return Value (log scale)'
+    fig.supxlabel(xlabel, fontsize=15)
     plt.savefig(f"figures/error_values_{aut}_{mode}.png", dpi=300)
 
 
-def plot_error_instances_no_changes(data1, data2):
-    df1 = process_dataset(data1, llm_config, ['no_changes'])['no_changes']
-    df2 = process_dataset(data2, random_config, ['no_changes'])['no_changes']
+def plot_error_instances_no_changes(aut, mode, llm_config, random_config, data1, data2):
+    df1 = process_dataset(data1, mode, llm_config, ['no_changes'])['no_changes']
+    df2 = process_dataset(data2, mode, random_config, ['no_changes'])['no_changes']
 
     # get unique syscalls
     all_syscalls = pd.concat([data1, data2])
@@ -500,7 +539,7 @@ def plot_error_instances_no_changes(data1, data2):
     for ax, df, title in zip(axs, [df1, df2], ['SyscaLLM (GPT-4o)', 'Random']):
         sns.scatterplot(
             data=df,
-            x='retval',
+            x='val',
             y='syscall',
             hue='when',
             palette='viridis',
@@ -524,58 +563,68 @@ def plot_error_instances_no_changes(data1, data2):
 
 
 def main():    
-    # initialize accumulators as empty Series
-    all_llm_data = pd.DataFrame() 
-    all_random_data = pd.DataFrame()
+    for aut in auts:      
+        for mode in modes:
+            config_dir = os.path.join(data_dir, "config", aut, mode)
+            config_random_log_dir = os.path.join(data_dir, "config_random_log", aut, mode)
 
-    for i in range(1, runs + 1):
-        # file paths
-        llm_generated_file = os.path.join(result_dir, f'result{i}.csv')
-        random_generated_file = os.path.join(result_dir, f'result_random_{baseline}{i}.csv')
+            llm_config = os.path.join(config_dir, f"temperature_{temperature}", "gpt-4o")
+            random_config = os.path.join(config_random_log_dir, f"temperature_{temperature}", "gpt-4o")
 
-        # read data
-        llm_data, random_data = read_data(llm_generated_file, random_generated_file)
+            # initialize accumulators as empty Series
+            all_llm_data = pd.DataFrame() 
+            all_random_data = pd.DataFrame()
 
-        # drop 'timeout' column
-        llm_data = llm_data.drop(columns=['timeout'])
-        random_data = random_data.drop(columns=['timeout'])
+            result_dir = os.path.join(data_dir, "result", aut, mode)
 
-        # add run column
-        llm_data = add_run_column(llm_data, i)
-        random_data = add_run_column(random_data, i)
-        
-        # add syscall column
-        llm_data = add_syscall_column(llm_data)
-        random_data = add_syscall_column(random_data)
+            for r in range(1, runs + 1):
+                # file paths
+                llm_generated_file = os.path.join(result_dir, f'result{r}.csv')
+                random_generated_file = os.path.join(result_dir, f'result_random_{baseline}{r}.csv')
 
-        # accumulate all data
-        all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
-        all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
+                # read data
+                llm_data, random_data = read_data(llm_generated_file, random_generated_file)
 
-    # Reorder columns for better readability
-    column_order = ['id', 'syscall', 'run'] + outcome_types
-    all_llm_data = all_llm_data[column_order]
-    all_random_data = all_random_data[column_order]
-    
-    print_statistics(all_llm_data, all_random_data)
-    print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
+                # drop 'timeout' column
+                llm_data = llm_data.drop(columns=['timeout'])
+                random_data = random_data.drop(columns=['timeout'])
 
-    plot_test_case_distribution(all_llm_data)
+                # add run column
+                llm_data = add_run_column(llm_data, r)
+                random_data = add_run_column(random_data, r)
 
-    # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    plot_outcome(all_llm_data, all_random_data)
-    
-    # plot normalized failure types by syscall
-    plot_outcome_per_syscall(all_llm_data, all_random_data)
+                # add syscall column
+                llm_data = add_syscall_column(llm_data)
+                random_data = add_syscall_column(random_data)
 
-    # plot failure types by syscall
-    plot_failure_per_syscall(all_llm_data, all_random_data)
+                # accumulate all data
+                all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
+                all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
 
-    # plot silent data corruption by syscall
-    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+            # Reorder columns for better readability
+            column_order = ['id', 'syscall', 'run'] + outcome_types
+            all_llm_data = all_llm_data[column_order]
+            all_random_data = all_random_data[column_order]
+            
+            print_statistics(aut, mode, all_llm_data, all_random_data)
+            # print_silent_data_corruption_syscalls(all_llm_data, all_random_data)
 
-    plot_error_instances(all_llm_data, all_random_data)
-    plot_error_instances_no_changes(all_llm_data, all_random_data)
+            plot_test_case_distribution(aut, mode, all_llm_data)
+
+            # plot outcome rates for SyscaLLM (GPT-4o) and Random
+            plot_outcome(aut, mode, all_llm_data, all_random_data)
+            
+            # plot normalized failure types by syscall
+            plot_outcome_per_syscall(aut, mode, all_llm_data, all_random_data)
+
+            # plot failure types by syscall
+            plot_failure_per_syscall(aut, mode, all_llm_data, all_random_data)
+
+            # plot silent data corruption by syscall
+            plot_silent_data_corruption_by_syscall(aut, mode, all_llm_data, all_random_data)
+
+            plot_error_instances(aut, mode, llm_config, random_config, all_llm_data, all_random_data)
+            plot_error_instances_no_changes(aut, mode, llm_config, random_config, all_llm_data, all_random_data)
 
 if __name__ == "__main__":
     main()

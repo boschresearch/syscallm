@@ -17,11 +17,10 @@ plt.rcParams["font.family"] = "Times New Roman"
 
 runs = config.runs
 total_syscall_count = config.total_syscall_count
+modes = config.modes
+models = config.models
+temperature = config.temperature
 data_dir = config.data_dir
-
-models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
-temperature = ["0.3", "0.5", "0.7"]
-modes = ["success", "error_code"]
 
 
 def categorize(json_dir, mode):
@@ -333,7 +332,7 @@ if __name__ == "__main__":
             ax.set_xticks(X_POS)
             ax.set_xticklabels(TEMP_LABELS, fontsize=10)
             for i, model in enumerate(models):
-                ax.text(midpoints[i], -10, model, ha='center', va='top', fontsize=10, transform=ax.transData)
+                ax.text(midpoints[i], -10, model, ha='center', va='top', fontsize=10, transform=ax.transData, rotation=10)
             ax.set_ylim(0, 100)
             ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
             ax.set_yticks(range(0, 101, 10))
