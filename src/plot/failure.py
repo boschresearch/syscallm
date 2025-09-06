@@ -8,6 +8,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
 import json
+import matplotlib as mpl
 import utils.app_syscalls as app_syscalls
 
 runs = config.runs
@@ -458,48 +459,73 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
     for label, data, config in datasets:
         dataset_dfs = process_dataset(data, mode, config, failure_types)
         for err, df in dataset_dfs.items():
+            # ensure required columns exist even if empty
+            if df is None or df.empty:
+                df = pd.DataFrame(columns=['syscall', 'val', 'when'])
             dfs[(label, err)] = df
 
-    # get unique syscalls
-    all_syscalls = pd.concat([llm, random])
+    # consistent y ordering across all panels
+    all_syscalls = pd.concat([llm[['syscall']], random[['syscall']]], axis=0, ignore_index=True).dropna()
     unique_syscalls = sorted(all_syscalls['syscall'].unique().tolist())
-    
     for df in dfs.values():
         df['syscall'] = pd.Categorical(df['syscall'], categories=unique_syscalls, ordered=True)
 
-    fig, axs = plt.subplots(2, 4, figsize=(18, 10), sharex=True, sharey=True)
+    n_cols = len(failure_types)
+    fig, axs = plt.subplots(2, n_cols, figsize=(18, 12), sharex=True, sharey=True)
+
+    # collect all 'when' values for color normalization
+    all_when = df['when']
+    vmin = all_when.min() if not all_when.empty else 0
+    vmax = all_when.max() if not all_when.empty else 1
+    cmap = plt.get_cmap('viridis')
+
+    scatter_handles = []
     for row, (label, _, _) in enumerate(datasets):
         for col, err in enumerate(failure_types):
             ax = axs[row, col]
             df = dfs[(label, err)]
+            # Make sure numeric 'when' for mapping; allow empty df gracefully
+            if not df.empty:
+                df = df.copy()
+                df['when'] = pd.to_numeric(df['when'], errors='coerce')
+                df = df.dropna(subset=['when'])
 
-            scatter = sns.scatterplot(
-                data=df,
-                x='val',
-                y='syscall',
-                hue='when',
-                palette='viridis',
-                legend=(row == 0 and col == len(failure_types) - 1),
-                ax=ax
-            )
+            # Use seaborn scatter with continuous hue (legend off; we add a shared colorbar)
+            if not df.empty:
+                sc = ax.scatter(
+                    df['val'], df['syscall'],
+                    c=df['when'], cmap=cmap, vmin=vmin, vmax=vmax, s=22
+                )
+                if row == 0 and col == 0:
+                    scatter_handles.append(sc)
+            else:
+                # No data for this panel
+                ax.text(0.5, 0.5, 'No data', ha='center', va='center', fontsize=11, alpha=0.7, transform=ax.transAxes)
+
             if row == 0:
                 ax.set_title(renamed_failure_types[col], fontsize=14)
             if col == 0:
-                ax.set_ylabel(label, fontsize=13)
+                ax.set_ylabel(label, fontsize=12)
             else:
                 ax.set_ylabel(None)
+
             ax.set_xlabel(None)
-            ax.tick_params(axis='x', labelsize=11)
-            ax.tick_params(axis='y', labelsize=11)
+            ax.tick_params(axis='x', labelsize=10)
+            ax.tick_params(axis='y', labelsize=10)
             ax.set_xscale('log')
-            ax.grid(linestyle='--', alpha=0.7)
+            ax.grid(linestyle='--', alpha=0.6)
 
-    handles, labels = axs[0, -1].get_legend_handles_labels()
-    fig.legend(handles, labels, title='when', loc='upper right', bbox_to_anchor=(1.04, 0.95), fontsize=12, title_fontsize=13)
+    # shared colorbar for 'when'
+    if scatter_handles:
+        cbar = fig.colorbar(
+            scatter_handles[0], ax=axs, orientation='vertical', fraction=0.05, pad=0.04
+        )
+        cbar.set_label('when', fontsize=13)
+        cbar.ax.yaxis.set_major_locator(mpl.ticker.MaxNLocator(integer=True))
 
-    fig.supxlabel('Return Value (log scale)', fontsize=15)
+    # shared x-label
     xlabel = 'Error Code (log scale)' if mode == 'error_code' else 'Return Value (log scale)'
-    fig.supxlabel(xlabel, fontsize=15)
+    fig.supxlabel(xlabel, fontsize=14)
     plt.savefig(f"figures/error_values_{aut}_{mode}.png", dpi=300)
     plt.close()
 
@@ -534,7 +560,8 @@ def plot_error_instances_no_changes(aut, mode, llm_config, random_config, llm, r
         ax.tick_params(axis='y', labelsize=12)
         ax.set_xscale('log')
         ax.grid(linestyle='--', alpha=0.7)
-        # ax.get_legend().remove()
+        if ax.get_legend() is not None:
+            ax.get_legend().remove()
 
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, title='when', loc='upper left', bbox_to_anchor=(0.9, 0.95))
@@ -593,7 +620,7 @@ def main():
     all_llm_data = all_llm_data[column_order]
     all_random_data = all_random_data[column_order]
             
-    print_statistics(all_llm_data, all_random_data)
+    # print_statistics(all_llm_data, all_random_data)
 
     # plot test case distribution for each aut and mode
     # plot_test_case_distribution(all_llm_data)
