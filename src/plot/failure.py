@@ -1,8 +1,8 @@
 import os
 import errno
-from pdb import run
 import pandas as pd
 import matplotlib.pyplot as plt
+from itertools import chain
 import seaborn as sns
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -455,6 +455,7 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
         ('Random (Log)', random, random_config)
     ]
 
+    # get injected values and when for each failure type
     dfs = {}
     for label, data, config in datasets:
         dataset_dfs = process_dataset(data, mode, config, failure_types)
@@ -464,42 +465,46 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
                 df = pd.DataFrame(columns=['syscall', 'val', 'when'])
             dfs[(label, err)] = df
 
-    # consistent y ordering across all panels
-    all_syscalls = pd.concat([llm[['syscall']], random[['syscall']]], axis=0, ignore_index=True).dropna()
-    unique_syscalls = sorted(all_syscalls['syscall'].unique().tolist())
-    for df in dfs.values():
-        df['syscall'] = pd.Categorical(df['syscall'], categories=unique_syscalls, ordered=True)
-
-    n_cols = len(failure_types)
-    fig, axs = plt.subplots(2, n_cols, figsize=(18, 12), sharex=True, sharey=True)
+    all_syscalls = sorted(set(
+        chain.from_iterable(
+            df['syscall'].dropna().unique().tolist()
+            for df in dfs.values() if not df.empty
+        )
+    ), reverse=True)
+    syscall_to_y = {name: i for i, name in enumerate(all_syscalls)}
 
     # collect all 'when' values for color normalization
-    all_when = df['when']
+    all_when = pd.concat([df['when'] for df in dfs.values() if not df['when'].empty], axis=0)
     vmin = all_when.min() if not all_when.empty else 0
     vmax = all_when.max() if not all_when.empty else 1
     cmap = plt.get_cmap('viridis')
 
+    n_cols = len(failure_types)
+    fig, axs = plt.subplots(2, n_cols, figsize=(18, 12), sharex=True, sharey=True)
     scatter_handles = []
+
     for row, (label, _, _) in enumerate(datasets):
         for col, err in enumerate(failure_types):
             ax = axs[row, col]
             df = dfs[(label, err)]
-            # Make sure numeric 'when' for mapping; allow empty df gracefully
+
             if not df.empty:
                 df = df.copy()
-                df['when'] = pd.to_numeric(df['when'], errors='coerce')
-                df = df.dropna(subset=['when'])
+                df['y_pos'] = df['syscall'].map(syscall_to_y)
 
-            # Use seaborn scatter with continuous hue (legend off; we add a shared colorbar)
-            if not df.empty:
                 sc = ax.scatter(
-                    df['val'], df['syscall'],
-                    c=df['when'], cmap=cmap, vmin=vmin, vmax=vmax, s=22
+                    df['val'],
+                    df['y_pos'],
+                    c=df['when'],
+                    cmap=cmap,
+                    vmin=vmin,
+                    vmax=vmax,
+                    s=22
                 )
                 if row == 0 and col == 0:
                     scatter_handles.append(sc)
             else:
-                # No data for this panel
+                # no data for this panel
                 ax.text(0.5, 0.5, 'No data', ha='center', va='center', fontsize=11, alpha=0.7, transform=ax.transAxes)
 
             if row == 0:
@@ -514,6 +519,9 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
             ax.tick_params(axis='y', labelsize=10)
             ax.set_xscale('log')
             ax.grid(linestyle='--', alpha=0.6)
+
+            ax.set_yticks(list(syscall_to_y.values()))
+            ax.set_yticklabels(list(syscall_to_y.keys()), fontsize=10)
 
     # shared colorbar for 'when'
     if scatter_handles:
@@ -611,9 +619,9 @@ def main():
                 # accumulate all data
                 all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
                 all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
-            
-            plot_error_instances(aut, mode, llm_config, random_config, llm_data, random_data)
-            plot_error_instances_no_changes(aut, mode, llm_config, random_config, llm_data, random_data)
+
+            plot_error_instances(aut, mode, llm_config, random_config, all_llm_data[(all_llm_data['aut'] == aut) & (all_llm_data['mode'] == mode)], all_random_data[(all_random_data['aut'] == aut) & (all_random_data['mode'] == mode)])
+            plot_error_instances_no_changes(aut, mode, llm_config, random_config, all_llm_data[(all_llm_data['aut'] == aut) & (all_llm_data['mode'] == mode)], all_random_data[(all_random_data['aut'] == aut) & (all_random_data['mode'] == mode)])
 
     # reorder columns for better readability
     column_order = ['aut', 'mode', 'run', 'id', 'syscall'] + outcome_types
@@ -623,7 +631,7 @@ def main():
     # print_statistics(all_llm_data, all_random_data)
 
     # plot test case distribution for each aut and mode
-    # plot_test_case_distribution(all_llm_data)
+    plot_test_case_distribution(all_llm_data)
 
     # plot outcome rates for SyscaLLM (GPT-4o) and Random
     plot_outcome(all_llm_data, all_random_data)
