@@ -216,141 +216,132 @@ def compute_x_positions(models, temperatures):
 
 
 if __name__ == "__main__":
-    fig_valid, axs_valid = plt.subplots(ncols=2, figsize=(11, 4), sharey=True)
-    fig_invalid, axs_invalid = plt.subplots(ncols=2, figsize=(11, 4), sharey=True)
-    
+    fig, axs = plt.subplots(ncols=2, figsize=(11, 4), sharey=True)
     X_POS, TEMP_LABELS, N_TEMPS = compute_x_positions(models, temperature)
     X_MIN, X_MAX = X_POS.min(), X_POS.max()
-    
     hallucinatory_error_codes = {model: [] for model in models}
 
     for mode_idx, mode in enumerate(modes):
-        fig, axs = plt.subplots(ncols=2, figsize=(11, 4), sharey=True)
-        X_POS, TEMP_LABELS, N_TEMPS = compute_x_positions(models, temperature)
-        X_MIN, X_MAX = X_POS.min(), X_POS.max()
-        hallucinatory_error_codes = {model: [] for model in models}
+        df_valid = pd.DataFrame(columns=[
+            'mode', 'model_name', 'run', 'temperature',
+            'total_count', 'not_usable_count', 'out_of_bound_count'
+        ])
+        df_invalid = pd.DataFrame(columns=[
+            'mode', 'model_name', 'run', 'temperature',
+            'loop_count', 'enumeration_count', 'blocked_count'
+        ])
 
-        for mode_idx, mode in enumerate(modes):
-            df_valid = pd.DataFrame(columns=[
-                'mode', 'model_name', 'run', 'temperature',
-                'total_count', 'not_usable_count', 'out_of_bound_count'
-            ])
-            df_invalid = pd.DataFrame(columns=[
-                'mode', 'model_name', 'run', 'temperature',
-                'loop_count', 'enumeration_count', 'blocked_count'
-            ])
-
-            temperature_dirs = [
-                os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature
-            ]
-
-            for temp_dir, temp in zip(temperature_dirs, temperature):
-                for model in models:
-                    for run in range(1, runs + 1):
-                        json_dir = os.path.join(temp_dir, model, f'run{run}')
-                        valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration, invalid_blocked = categorize(json_dir, mode)
-                        df_valid = pd.concat([df_valid, pd.DataFrame({
-                            'mode': [mode],
-                            'model_name': [model],
-                            'run': [run],
-                            'temperature': [temp],
-                            'total_count': [len(valid)],
-                            'not_usable_count': [len(valid_empty) + len(valid_all_out_of_bound)],
-                            'out_of_bound_count': [len(valid_out_of_bound)]
-                        })], ignore_index=True)
-                        df_invalid = pd.concat([df_invalid, pd.DataFrame({
-                            'mode': [mode],
-                            'model_name': [model],
-                            'run': [run],
-                            'temperature': [temp],
-                            'loop_count': [len(invalid_loop)],
-                            'enumeration_count': [len(invalid_enumeration)],
-                            'blocked_count': [len(invalid_blocked)]
-                        })], ignore_index=True)
-
-            if mode == "error_code":
-                print("Hallucinatory Error Codes:")
-                for model, codes in hallucinatory_error_codes.items():
-                    sorted_codes = sorted(codes, key=lambda x: x[1], reverse=True)
-                    top_10 = sorted_codes[:10]
-                    print(f"Model: {model}, Top 10 Hallucinatory Error Codes:")
-                    for code, count in top_10:
-                        print(f"  {code}: {count}")
-                    print()
-
-            # add percentage columns
-            df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
-            df_valid['not_usable_percentage'] = (df_valid['not_usable_count'] / total_syscall_count) * 100
-            df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
-            df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage'] - df_valid['not_usable_percentage']
-            df_invalid['loop_percentage'] = (df_invalid['loop_count'] / total_syscall_count) * 100
-            df_invalid['enumeration_percentage'] = (df_invalid['enumeration_count'] / total_syscall_count) * 100
-            df_invalid['blocked_percentage'] = (df_invalid['blocked_count'] / total_syscall_count) * 100
-
-            # pivot and merge valid/invalid for stacked bar
-            df_valid_pivot = df_valid.pivot_table(
-                index=['mode', 'model_name', 'temperature'],
-                values=['in_bound_percentage', 'out_of_bound_percentage', 'not_usable_percentage'],
-                aggfunc='mean'
-            ).reset_index()
-            df_invalid_pivot = df_invalid.pivot_table(
-                index=['mode', 'model_name', 'temperature'],
-                values=['loop_percentage', 'enumeration_percentage', 'blocked_percentage'],
-                aggfunc='mean'
-            ).reset_index().infer_objects(copy=False).fillna(0)
-
-            # merge valid and invalid pivots
-            df_combined = pd.merge(
-                df_valid_pivot,
-                df_invalid_pivot,
-                on=['mode', 'model_name', 'temperature'],
-                how='outer'
-            ).reset_index().infer_objects(copy=False).fillna(0)
-
-            # sort for plotting
-            df_combined_sorted = df_combined.sort_values(['model_name', 'temperature'])
-            # get all stacked segments
-            in_bound     = df_combined_sorted['in_bound_percentage'].to_numpy()
-            out_of_bound = df_combined_sorted['out_of_bound_percentage'].to_numpy()
-            enumeration  = df_combined_sorted['enumeration_percentage'].to_numpy()
-            loop         = df_combined_sorted['loop_percentage'].to_numpy()
-
-            # stacked bar plot
-            ax = axs[mode_idx]
-            bar_w = 0.6
-            bottom = np.zeros_like(in_bound)
-            ax.bar(X_POS, in_bound, bar_w, label='Clean', color='white', hatch='///', edgecolor='black', bottom=bottom)
-            bottom += in_bound
-            ax.bar(X_POS, out_of_bound, bar_w, label='OOB', color='white', hatch='...', edgecolor='black', bottom=bottom)
-            bottom += out_of_bound
-            ax.bar(X_POS, enumeration, bar_w, label='Enumeration', color='darkgrey', hatch='\\', edgecolor='black', bottom=bottom)
-            bottom += enumeration
-            ax.bar(X_POS, loop, bar_w, label='Loop', color='darkgrey', hatch='oo', edgecolor='black', bottom=bottom)
-
-            midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
-            ax.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
-            ax.set_xticks(X_POS)
-            ax.set_xticklabels(TEMP_LABELS, fontsize=10)
-            for i, model in enumerate(models):
-                ax.text(midpoints[i], -10, model, ha='center', va='top', fontsize=10, transform=ax.transData, rotation=10)
-            ax.set_ylim(0, 100)
-            ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
-            ax.set_yticks(range(0, 101, 10))
-            ax.set_title(f"{mode}", fontsize=13)
-
-        handles = [
-            Patch(facecolor='white', edgecolor='black', hatch='///', label='Clean'),
-            Patch(facecolor='white', edgecolor='black', hatch='...', label='OOB'),
-            Patch(facecolor='darkgrey', edgecolor='black', hatch='\\', label='Enumeration'),
-            Patch(facecolor='darkgrey', edgecolor='black', hatch='oo', label='Loop'),
+        temperature_dirs = [
+            os.path.join(data_dir, "json", mode, f"temperature_{temp}") for temp in temperature
         ]
-        fig.legend(
-            handles=handles,
-            loc='center left',
-            bbox_to_anchor=(0.88, 0.5),
-            ncol=1,
-            frameon=True,
-            fontsize=10
-        )
-        fig.tight_layout(rect=[0, 0, 0.89, 1])
-        fig.savefig("figures/coverage.png", dpi=300)
+
+        for temp_dir, temp in zip(temperature_dirs, temperature):
+            for model in models:
+                for run in range(1, runs + 1):
+                    json_dir = os.path.join(temp_dir, model, f'run{run}')
+                    valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration, invalid_blocked = categorize(json_dir, mode)
+                    df_valid = pd.concat([df_valid, pd.DataFrame({
+                        'mode': [mode],
+                        'model_name': [model],
+                        'run': [run],
+                        'temperature': [temp],
+                        'total_count': [len(valid)],
+                        'not_usable_count': [len(valid_empty) + len(valid_all_out_of_bound)],
+                        'out_of_bound_count': [len(valid_out_of_bound)]
+                    })], ignore_index=True)
+                    df_invalid = pd.concat([df_invalid, pd.DataFrame({
+                        'mode': [mode],
+                        'model_name': [model],
+                        'run': [run],
+                        'temperature': [temp],
+                        'loop_count': [len(invalid_loop)],
+                        'enumeration_count': [len(invalid_enumeration)],
+                        'blocked_count': [len(invalid_blocked)]
+                    })], ignore_index=True)
+
+        if mode == "error_code":
+            print("Hallucinatory Error Codes:")
+            for model, codes in hallucinatory_error_codes.items():
+                sorted_codes = sorted(codes, key=lambda x: x[1], reverse=True)
+                top_10 = sorted_codes[:10]
+                print(f"Model: {model}, Top 10 Hallucinatory Error Codes:")
+                for code, count in top_10:
+                    print(f"  {code}: {count}")
+                print()
+
+        # add percentage columns
+        df_valid['total_percentage'] = (df_valid['total_count'] / total_syscall_count) * 100
+        df_valid['not_usable_percentage'] = (df_valid['not_usable_count'] / total_syscall_count) * 100
+        df_valid['out_of_bound_percentage'] = (df_valid['out_of_bound_count'] / total_syscall_count) * 100
+        df_valid['in_bound_percentage'] = df_valid['total_percentage'] - df_valid['out_of_bound_percentage'] - df_valid['not_usable_percentage']
+        df_invalid['loop_percentage'] = (df_invalid['loop_count'] / total_syscall_count) * 100
+        df_invalid['enumeration_percentage'] = (df_invalid['enumeration_count'] / total_syscall_count) * 100
+        df_invalid['blocked_percentage'] = (df_invalid['blocked_count'] / total_syscall_count) * 100
+
+        # pivot and merge valid/invalid for stacked bar
+        df_valid_pivot = df_valid.pivot_table(
+            index=['mode', 'model_name', 'temperature'],
+            values=['in_bound_percentage', 'out_of_bound_percentage', 'not_usable_percentage'],
+            aggfunc='mean'
+        ).reset_index()
+        df_invalid_pivot = df_invalid.pivot_table(
+            index=['mode', 'model_name', 'temperature'],
+            values=['loop_percentage', 'enumeration_percentage', 'blocked_percentage'],
+            aggfunc='mean'
+        ).reset_index().infer_objects(copy=False).fillna(0)
+
+        # merge valid and invalid pivots
+        df_combined = pd.merge(
+            df_valid_pivot,
+            df_invalid_pivot,
+            on=['mode', 'model_name', 'temperature'],
+            how='outer'
+        ).reset_index().infer_objects(copy=False).fillna(0)
+
+        # sort for plotting
+        df_combined_sorted = df_combined.sort_values(['model_name', 'temperature'])
+        # get all stacked segments
+        in_bound     = df_combined_sorted['in_bound_percentage'].to_numpy()
+        out_of_bound = df_combined_sorted['out_of_bound_percentage'].to_numpy()
+        enumeration  = df_combined_sorted['enumeration_percentage'].to_numpy()
+        loop         = df_combined_sorted['loop_percentage'].to_numpy()
+
+        # stacked bar plot
+        ax = axs[mode_idx]
+        bar_w = 0.6
+        bottom = np.zeros_like(in_bound)
+        ax.bar(X_POS, in_bound, bar_w, label='Clean', color='white', hatch='///', edgecolor='black', bottom=bottom)
+        bottom += in_bound
+        ax.bar(X_POS, out_of_bound, bar_w, label='OOB', color='white', hatch='...', edgecolor='black', bottom=bottom)
+        bottom += out_of_bound
+        ax.bar(X_POS, enumeration, bar_w, label='Enumeration', color='darkgrey', hatch='\\', edgecolor='black', bottom=bottom)
+        bottom += enumeration
+        ax.bar(X_POS, loop, bar_w, label='Loop', color='darkgrey', hatch='oo', edgecolor='black', bottom=bottom)
+
+        midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
+        ax.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
+        ax.set_xticks(X_POS)
+        ax.set_xticklabels(TEMP_LABELS, fontsize=10)
+        for i, model in enumerate(models):
+            ax.text(midpoints[i], -10, model, ha='center', va='top', fontsize=10, transform=ax.transData, rotation=10)
+        ax.set_ylim(0, 100)
+        ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
+        ax.set_yticks(range(0, 101, 10))
+        ax.set_title(f"{mode}", fontsize=13)
+
+    handles = [
+        Patch(facecolor='white', edgecolor='black', hatch='///', label='Clean'),
+        Patch(facecolor='white', edgecolor='black', hatch='...', label='OOB'),
+        Patch(facecolor='darkgrey', edgecolor='black', hatch='\\', label='Enumeration'),
+        Patch(facecolor='darkgrey', edgecolor='black', hatch='oo', label='Loop'),
+    ]
+    fig.legend(
+        handles=handles,
+        loc='center left',
+        bbox_to_anchor=(0.88, 0.5),
+        ncol=1,
+        frameon=True,
+        fontsize=10
+    )
+    fig.tight_layout(rect=[0, 0, 0.89, 1])
+    fig.savefig("figures/coverage.png", dpi=300)
