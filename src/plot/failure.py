@@ -449,7 +449,7 @@ def process_dataset(data, mode, config_base, result_types):
     return dfs
 
 
-def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
+def plot_error_instances_when(aut, mode, llm_config, random_config, llm, random):
     datasets = [
         ('SyscaLLM (GPT-4o)', llm, llm_config),
         ('Random (Log)', random, random_config)
@@ -458,7 +458,7 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
     # get injected values and when for each failure type
     dfs = {}
     for label, data, config in datasets:
-        dataset_dfs = process_dataset(data, mode, config, failure_types)
+        dataset_dfs = process_dataset(data, mode, config, outcome_types)
         for err, df in dataset_dfs.items():
             # ensure required columns exist even if empty
             if df is None or df.empty:
@@ -479,12 +479,12 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
     vmax = all_when.max() if not all_when.empty else 1
     cmap = plt.get_cmap('viridis')
 
-    n_cols = len(failure_types)
+    n_cols = len(outcome_types)
     fig, axs = plt.subplots(2, n_cols, figsize=(18, 12), sharex=True, sharey=True)
     scatter_handles = []
 
     for row, (label, _, _) in enumerate(datasets):
-        for col, err in enumerate(failure_types):
+        for col, err in enumerate(outcome_types):
             ax = axs[row, col]
             df = dfs[(label, err)]
 
@@ -508,7 +508,7 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
                 ax.text(0.5, 0.5, 'No data', ha='center', va='center', fontsize=11, alpha=0.7, transform=ax.transAxes)
 
             if row == 0:
-                ax.set_title(renamed_failure_types[col], fontsize=14)
+                ax.set_title(renamed_outcome_types[col], fontsize=14)
             if col == 0:
                 ax.set_ylabel(label, fontsize=12)
             else:
@@ -534,48 +534,79 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
     # shared x-label
     xlabel = 'Error Code (log scale)' if mode == 'error_code' else 'Return Value (log scale)'
     fig.supxlabel(xlabel, fontsize=14)
-    plt.savefig(f"figures/error_values_{aut}_{mode}.png", dpi=300)
+    plt.savefig(f"figures/error_values_when_{aut}_{mode}.png", dpi=300)
     plt.close()
 
 
-def plot_error_instances_no_changes(aut, mode, llm_config, random_config, llm, random):
-    df1 = process_dataset(llm, mode, llm_config, ['no_changes'])['no_changes']
-    df2 = process_dataset(random, mode, random_config, ['no_changes'])['no_changes']
+def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
+    datasets = [
+        ('SyscaLLM (GPT-4o)', llm, llm_config),
+        ('Random (Log)', random, random_config)
+    ]
 
-    # get unique syscalls
-    all_syscalls = pd.concat([llm, random])
-    unique_syscalls = sorted(all_syscalls['syscall'].unique().tolist())
+    # get injected values and when for each failure type
+    dfs = {}
+    for label, data, config in datasets:
+        dataset_dfs = process_dataset(data, mode, config, outcome_types)
+        for err, df in dataset_dfs.items():
+            # ensure required columns exist even if empty
+            if df is None or df.empty:
+                df = pd.DataFrame(columns=['syscall', 'val'])
+            dfs[(label, err)] = df
 
-    for df in [df1, df2]:
-        df['syscall'] = pd.Categorical(df['syscall'], categories=unique_syscalls, ordered=True)
-
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
-
-    for ax, df, title in zip(axs, [df1, df2], ['SyscaLLM (GPT-4o)', 'Random (Log)']):
-        sns.scatterplot(
-            data=df,
-            x='val',
-            y='syscall',
-            hue='when',
-            palette='viridis',
-            legend=True,
-            ax=ax
+    all_syscalls = sorted(set(
+        chain.from_iterable(
+            df['syscall'].dropna().unique().tolist()
+            for df in dfs.values() if not df.empty
         )
-        ax.set_title(title, fontsize=14)
-        ax.set_xlabel(None)
-        ax.set_ylabel(None)
-        ax.tick_params(axis='x', labelsize=12)
-        ax.tick_params(axis='y', labelsize=12)
-        ax.set_xscale('log')
-        ax.grid(linestyle='--', alpha=0.7)
-        if ax.get_legend() is not None:
-            ax.get_legend().remove()
+    ), reverse=True)
+    syscall_to_y = {name: i for i, name in enumerate(all_syscalls)}
 
-    handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, title='when', loc='upper left', bbox_to_anchor=(0.9, 0.95))
-    fig.supxlabel('Return Value for No Changes (log scale)', fontsize=14)
-    plt.tight_layout(pad=1.0, w_pad=0.5, h_pad=0.5, rect=[0, 0, 0.9, 1])
-    plt.savefig(f"figures/no_changes_{aut}_{mode}.png", dpi=300)
+    n_cols = len(outcome_types)
+    fig, axs = plt.subplots(2, n_cols, figsize=(18, 12), sharex=True, sharey=True)
+    scatter_handles = []
+
+    for row, (label, _, _) in enumerate(datasets):
+        for col, err in enumerate(outcome_types):
+            ax = axs[row, col]
+            df = dfs[(label, err)]
+
+            if not df.empty:
+                df = df.copy()
+                df['y_pos'] = df['syscall'].map(syscall_to_y)
+
+                sc = ax.scatter(
+                    df['val'],
+                    df['y_pos'],
+                    s=5,
+                    color='black'
+                )
+                if row == 0 and col == 0:
+                    scatter_handles.append(sc)
+            else:
+                # no data for this panel
+                ax.text(0.5, 0.5, 'No data', ha='center', va='center', fontsize=11, alpha=0.7, transform=ax.transAxes)
+
+            if row == 0:
+                ax.set_title(renamed_outcome_types[col], fontsize=14)
+            if col == 0:
+                ax.set_ylabel(label, fontsize=12)
+            else:
+                ax.set_ylabel(None)
+
+            ax.set_xlabel(None)
+            ax.tick_params(axis='x', labelsize=10)
+            ax.tick_params(axis='y', labelsize=10)
+            ax.set_xscale('log')
+            ax.grid(linestyle='--', alpha=0.6)
+
+            ax.set_yticks(list(syscall_to_y.values()))
+            ax.set_yticklabels(list(syscall_to_y.keys()), fontsize=10)
+
+    # shared x-label
+    xlabel = 'Error Code (log scale)' if mode == 'error_code' else 'Return Value (log scale)'
+    fig.supxlabel(xlabel, fontsize=14)
+    plt.savefig(f"figures/error_values_{aut}_{mode}.png", dpi=300)
     plt.close()
 
 
@@ -620,8 +651,8 @@ def main():
                 all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
                 all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
 
-            plot_error_instances(aut, mode, llm_config, random_config, all_llm_data[(all_llm_data['aut'] == aut) & (all_llm_data['mode'] == mode)], all_random_data[(all_random_data['aut'] == aut) & (all_random_data['mode'] == mode)])
-            plot_error_instances_no_changes(aut, mode, llm_config, random_config, all_llm_data[(all_llm_data['aut'] == aut) & (all_llm_data['mode'] == mode)], all_random_data[(all_random_data['aut'] == aut) & (all_random_data['mode'] == mode)])
+                if r == 1:
+                    plot_error_instances(aut, mode, llm_config, random_config, llm_data[(llm_data['aut'] == aut) & (llm_data['mode'] == mode)], random_data[(random_data['aut'] == aut) & (random_data['mode'] == mode)])
 
     # reorder columns for better readability
     column_order = ['aut', 'mode', 'run', 'id', 'syscall'] + outcome_types
