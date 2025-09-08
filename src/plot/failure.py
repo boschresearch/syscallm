@@ -257,6 +257,49 @@ def plot_outcome_per_syscall(llm, random):
         plt.close()
 
 
+def plot_outcome_per_syscall_heatmap(llm, random):
+    def aggregate_and_compute_outcomes(df, label):
+        # aggregate each failure type per aut, mode, syscall
+        agg = df.groupby(['aut', 'mode', 'syscall'])[failure_types].sum().div(runs).reset_index()
+        agg['type'] = label
+
+        # calculate percentage for each failure type
+        row_totals = agg[failure_types].sum(axis=1)
+        for failure in failure_types:
+            agg[failure] = agg.apply(
+                lambda r: (r[failure] / row_totals[r.name] * 100) if row_totals[r.name] > 0 else None,
+                axis=1
+            )
+        agg['total'] = agg[failure_types].sum(axis=1)
+
+        return agg[['aut', 'mode', 'syscall', 'type', 'total'] + failure_types]
+    
+    llm_agg = aggregate_and_compute_outcomes(llm, 'SyscaLLM (GPT-4o)')
+    rnd_agg = aggregate_and_compute_outcomes(random, 'Random (Log)')
+
+    # combine
+    all_agg = pd.concat([llm_agg, rnd_agg], ignore_index=True)
+
+    # calculate difference between SyscaLLM and Random for each aut, mode, syscall, failure type
+    diffs = []
+    for aut in all_agg['aut'].unique():
+        for mode in all_agg['mode'].unique():
+            llm_subset = all_agg[(all_agg['aut'] == aut) & (all_agg['mode'] == mode) & (all_agg['type'] == 'SyscaLLM (GPT-4o)')]
+            rnd_subset = all_agg[(all_agg['aut'] == aut) & (all_agg['mode'] == mode) & (all_agg['type'] == 'Random (Log)')]
+            merged = pd.merge(llm_subset, rnd_subset, on='syscall', suffixes=('_llm', '_rnd'))
+
+            diff_dict = {'aut': aut, 'mode': mode, 'syscall': merged['syscall']}
+            for failure in failure_types + ['total']:
+                diff_dict[f'{failure}_llm'] = merged[f'{failure}_llm']
+                diff_dict[f'{failure}_rnd'] = merged[f'{failure}_rnd']
+                diff_dict[f'{failure}_diff'] = (merged[f'{failure}_llm'] - merged[f'{failure}_rnd']).round(2)
+
+            diffs.append(pd.DataFrame(diff_dict))
+
+    diff_df = pd.concat(diffs, ignore_index=True)
+    diff_df.to_csv("figures/outcome_per_syscall_diff.csv", index=False)
+
+
 def plot_failure_per_syscall(llm, random):
     outcome_labels = dict(zip(failure_types, renamed_failure_types))
 
@@ -667,8 +710,11 @@ def main():
     # plot outcome rates for SyscaLLM (GPT-4o) and Random
     plot_outcome(all_llm_data, all_random_data)
             
-    # plot normalized failure types by syscall
+    # plot failure types by syscall
     plot_outcome_per_syscall(all_llm_data, all_random_data)
+
+    # plot failure types by syscall with heatmap
+    plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data)
 
     # plot failure types by syscall
     plot_failure_per_syscall(all_llm_data, all_random_data)
