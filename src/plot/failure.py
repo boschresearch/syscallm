@@ -346,9 +346,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             fmt=".1f",
             cbar_kws={"label": f"SyscaLLM - Random (%)"}
         )
-        plt.title(f"Failure Rate Difference — {aut}", fontsize=14)
-        plt.xlabel("Mode / Failure Type", fontsize=12)
-        plt.ylabel("Syscall", fontsize=12)
+        plt.title(f"{aut}", fontsize=14)
         plt.xticks(rotation=45, ha='right')
         plt.yticks(fontsize=8)
         plt.tight_layout()
