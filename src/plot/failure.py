@@ -2,6 +2,8 @@ import os
 import errno
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.patches import Rectangle
 from itertools import chain
 import seaborn as sns
 import numpy as np
@@ -9,7 +11,6 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
 import json
-import matplotlib as mpl
 import utils.app_syscalls as app_syscalls
 
 runs = config.runs
@@ -281,7 +282,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
                         entry = {'aut': aut, 'mode': mode, 'syscall': syscall, 'type': label}
                         for failure in failure_types:
                             entry[failure] = None
-                        entry['total'] = None
+                        entry['total failure'] = None
                         result.append(entry)
                     else:
                         # get the first (and only) row as dict
@@ -295,9 +296,9 @@ def plot_outcome_per_syscall_heatmap(llm, random):
                             entry[failure] = (entry[failure] / row_total * 100) if row_total > 0 else None
 
                         # total failure rates
-                        entry['total'] = sum([entry[f] if entry[f] is not None else 0 for f in failure_types])
+                        entry['total failure'] = sum([entry[f] if entry[f] is not None else 0 for f in failure_types])
                         result.append(entry)
-        return pd.DataFrame(result, columns=['aut', 'mode', 'syscall', 'type', 'total'] + failure_types)
+        return pd.DataFrame(result, columns=['aut', 'mode', 'syscall', 'type', 'total failure'] + failure_types)
 
     # get the complete list of syscalls across all auts
     all_syscalls = sorted(set(llm['syscall'].unique()).union(set(random['syscall'].unique())))
@@ -317,7 +318,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             merged = pd.merge(llm_subset, rnd_subset, on='syscall', suffixes=('_llm', '_rnd'), how='outer')
 
             diff_dict = {'aut': aut, 'mode': mode, 'syscall': merged['syscall']}
-            for failure in failure_types + ['total']:
+            for failure in failure_types + ['total failure']:
                 # copy existing values
                 diff_dict[f'{failure}_llm'] = merged.get(f'{failure}_llm')
                 diff_dict[f'{failure}_rnd'] = merged.get(f'{failure}_rnd')
@@ -354,7 +355,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         # create a multi-index columns: (mode, failure)
         columns = []
         for mode in aut_df['mode'].unique():
-            for failure in failure_types + ['total']:
+            for failure in failure_types + ['total failure']:
                 columns.append((mode, failure))
 
         # build pivot table for heatmap values and for annotations
@@ -370,7 +371,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
                     row.extend([0] * (len(failure_types) + 1))
                     annot_row.extend([''] * (len(failure_types) + 1))
                 else:
-                    for failure in failure_types + ['total']:
+                    for failure in failure_types + ['total failure']:
                         val_rnd = mode_df[f'{failure}_rnd'].values[0] 
                         val_llm = mode_df[f'{failure}_llm'].values[0] 
                         diff_val = val_llm - val_rnd
@@ -399,6 +400,9 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             annot_kws={"fontsize": 8},
             ax=ax
         )
+
+        ax.add_patch(Rectangle((4, 0), 1, len(all_syscalls), fill=False, edgecolor='black', lw=1.5))
+        ax.add_patch(Rectangle((9, 0), 1, len(all_syscalls), fill=False, edgecolor='black', lw=1.5))
         
         ax.xaxis.set_ticks_position('top')
         ax.xaxis.set_label_position('top')
