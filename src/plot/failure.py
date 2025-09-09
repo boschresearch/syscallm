@@ -338,7 +338,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
 
     n_auts = len(auts)
 
-    fig, axs = plt.subplots(1, n_auts, figsize=(3.5 * len(diff_df['mode'].unique()) * n_auts, 18), sharey=True, gridspec_kw={"wspace": 0.0})
+    fig, axs = plt.subplots(1, n_auts, figsize=(3.5 * len(diff_df['mode'].unique()) * n_auts, 22), sharey=True, constrained_layout=True, gridspec_kw={'wspace': 0})
 
     if n_auts == 1:
         axs = [axs]  # ensure axs is iterable
@@ -402,23 +402,23 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         ax.set_yticklabels(ax.get_yticklabels(), fontsize=8, va='center', rotation=0)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=8)
         ax.set_yticks(ticks=range(len(pivot.index)))
-        ax.set_yticklabels(pivot.index, fontsize=8)
+        ax.set_yticklabels(pivot.index)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
         ax.set_title(f"{aut}", fontsize=14)
 
+    cbar_ax = fig.add_axes([0.3, 0.03, 0.4, 0.015])
     cbar = fig.colorbar(
         sm,
-        ax=axs,
+        cax=cbar_ax,
         orientation='horizontal',
         fraction=0.03,
-        pad=0.08
+        pad=0.02
     )
     cbar.set_label("SyscaLLM - Random (%)", fontsize=12)
     cbar.ax.xaxis.set_ticks_position('bottom')
     cbar.ax.xaxis.set_label_position('bottom')
 
-    plt.tight_layout(rect=[0, 0.87, 1, 1])
     plt.savefig("figures/failure_per_syscall_diff_heatmap.png", dpi=300)
     plt.close()
 
@@ -817,8 +817,8 @@ def main():
                 all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
                 all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
 
-                if r == 1:
-                    plot_error_instances(aut, mode, llm_config, random_config, llm_data[(llm_data['aut'] == aut) & (llm_data['mode'] == mode)], random_data[(random_data['aut'] == aut) & (random_data['mode'] == mode)])
+                # if r == 1:
+                #     plot_error_instances(aut, mode, llm_config, random_config, llm_data[(llm_data['aut'] == aut) & (llm_data['mode'] == mode)], random_data[(random_data['aut'] == aut) & (random_data['mode'] == mode)])
 
     # reorder columns for better readability
     column_order = ['aut', 'mode', 'run', 'id', 'syscall'] + outcome_types
@@ -827,23 +827,23 @@ def main():
             
     # print_statistics(all_llm_data, all_random_data)
 
-    # plot test case distribution for each aut and mode
-    plot_test_case_distribution(all_llm_data)
+    # # plot test case distribution for each aut and mode
+    # plot_test_case_distribution(all_llm_data)
 
-    # plot outcome rates for SyscaLLM (GPT-4o) and Random
-    plot_outcome(all_llm_data, all_random_data)
+    # # plot outcome rates for SyscaLLM (GPT-4o) and Random
+    # plot_outcome(all_llm_data, all_random_data)
             
-    # plot failure types by syscall
-    plot_outcome_per_syscall(all_llm_data, all_random_data)
+    # # plot failure types by syscall
+    # plot_outcome_per_syscall(all_llm_data, all_random_data)
 
     # plot failure types by syscall with heatmap
     plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data)
 
-    # plot failure types by syscall
-    plot_failure_per_syscall(all_llm_data, all_random_data)
+    # # plot failure types by syscall
+    # plot_failure_per_syscall(all_llm_data, all_random_data)
 
-    # plot silent data corruption by syscall
-    plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+    # # plot silent data corruption by syscall
+    # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
 
 if __name__ == "__main__":
