@@ -258,24 +258,40 @@ def plot_outcome_per_syscall(llm, random):
 
 
 def plot_outcome_per_syscall_heatmap(llm, random):
-    def aggregate_and_compute_outcomes(df, label):
+    def aggregate_and_compute_outcomes(df, label, all_syscalls):
         # aggregate each failure type per aut, mode, syscall
         agg = df.groupby(['aut', 'mode', 'syscall'])[failure_types].sum().div(runs).reset_index()
         agg['type'] = label
 
-        # calculate percentage for each failure type
-        row_totals = agg[failure_types].sum(axis=1)
-        for failure in failure_types:
-            agg[failure] = agg.apply(
-                lambda r: (r[failure] / row_totals[r.name] * 100) if row_totals[r.name] > 0 else None,
-                axis=1
-            )
-        agg['total'] = agg[failure_types].sum(axis=1)
+        # ensure all syscalls are present for each aut/mode
+        result = []
+        for aut in agg['aut'].unique():
+            for mode in agg['mode'].unique():
+                aut_mode_df = agg[(agg['aut'] == aut) & (agg['mode'] == mode)]
+                for syscall in all_syscalls:
+                    row = aut_mode_df[aut_mode_df['syscall'] == syscall]
+                    if row.empty:
+                        # fill with None for missing syscalls
+                        entry = {'aut': aut, 'mode': mode, 'syscall': syscall, 'type': label}
+                        for failure in failure_types:
+                            entry[failure] = None
+                        entry['total'] = None
+                        result.append(entry)
+                    else:
+                        entry = row.iloc[0].to_dict()
+                        # calculate percentage for each failure type
+                        row_total = sum([entry[f] if entry[f] is not None else 0 for f in failure_types])
+                        for failure in failure_types:
+                            entry[failure] = (entry[failure] / row_total * 100) if row_total > 0 else None
+                        entry['total'] = sum([entry[f] if entry[f] is not None else 0 for f in failure_types])
+                        result.append(entry)
+        return pd.DataFrame(result, columns=['aut', 'mode', 'syscall', 'type', 'total'] + failure_types)
 
-        return agg[['aut', 'mode', 'syscall', 'type', 'total'] + failure_types]
-    
-    llm_agg = aggregate_and_compute_outcomes(llm, 'SyscaLLM (GPT-4o)')
-    rnd_agg = aggregate_and_compute_outcomes(random, 'Random (Log)')
+    # get the complete list of syscalls across all auts
+    all_syscalls = sorted(set(llm['syscall'].unique()).union(set(random['syscall'].unique())))
+
+    llm_agg = aggregate_and_compute_outcomes(llm, 'SyscaLLM (GPT-4o)', all_syscalls)
+    rnd_agg = aggregate_and_compute_outcomes(random, 'Random (Log)', all_syscalls)
 
     # combine
     all_agg = pd.concat([llm_agg, rnd_agg], ignore_index=True)
@@ -286,14 +302,16 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         for mode in all_agg['mode'].unique():
             llm_subset = all_agg[(all_agg['aut'] == aut) & (all_agg['mode'] == mode) & (all_agg['type'] == 'SyscaLLM (GPT-4o)')]
             rnd_subset = all_agg[(all_agg['aut'] == aut) & (all_agg['mode'] == mode) & (all_agg['type'] == 'Random (Log)')]
-            merged = pd.merge(llm_subset, rnd_subset, on='syscall', suffixes=('_llm', '_rnd'))
+            merged = pd.merge(llm_subset, rnd_subset, on='syscall', suffixes=('_llm', '_rnd'), how='outer')
 
             diff_dict = {'aut': aut, 'mode': mode, 'syscall': merged['syscall']}
             for failure in failure_types + ['total']:
-                diff_dict[f'{failure}_llm'] = merged[f'{failure}_llm']
-                diff_dict[f'{failure}_rnd'] = merged[f'{failure}_rnd']
-                diff_dict[f'{failure}_diff'] = (merged[f'{failure}_llm'] - merged[f'{failure}_rnd']).round(2)
-
+                diff_dict[f'{failure}_llm'] = merged.get(f'{failure}_llm')
+                diff_dict[f'{failure}_rnd'] = merged.get(f'{failure}_rnd')
+                # handle None values
+                diff_dict[f'{failure}_diff'] = (
+                    merged[f'{failure}_llm'].fillna(0) - merged[f'{failure}_rnd'].fillna(0)
+                ).round(2)
             diffs.append(pd.DataFrame(diff_dict))
 
     diff_df = pd.concat(diffs, ignore_index=True)
