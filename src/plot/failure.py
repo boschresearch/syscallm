@@ -336,7 +336,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
     diff_df = pd.concat(diffs, ignore_index=True)
     diff_df.to_csv("figures/outcome_per_syscall_diff.csv", index=False)
 
-    # Plot a single figure with subplots for all auts
+    # plot a single figure with subplots for all auts
     auts_list = diff_df['aut'].unique()
     n_auts = len(auts_list)
     fig, axs = plt.subplots(1, n_auts, figsize=(len(diff_df['mode'].unique()) * n_auts, 23), sharey=True)
@@ -346,12 +346,12 @@ def plot_outcome_per_syscall_heatmap(llm, random):
 
     for idx, aut in enumerate(auts_list):
         aut_df = diff_df[diff_df['aut'] == aut]
-        # Create a multi-index columns: (mode, failure)
+        # create a multi-index columns: (mode, failure)
         columns = []
         for mode in aut_df['mode'].unique():
             for failure in failure_types + ['total']:
                 columns.append((mode, failure))
-        # Build pivot table for heatmap values and for annotations
+        # build pivot table for heatmap values and for annotations
         pivot_data = {}
         annot_data = {}
         for syscall in all_syscalls:
@@ -378,6 +378,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         annot = annot.loc[pivot.index]
 
         ax = axs[idx]
+        show_cbar = (idx == n_auts - 1)
         sns.heatmap(
             pivot,
             cmap="RdBu_r",
@@ -386,7 +387,8 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             linecolor='lightgrey',
             annot=annot,
             fmt="",
-            cbar_kws={"label": f"SyscaLLM - Random (%)"} if idx == n_auts - 1 else None,
+            cbar=show_cbar,
+            cbar_kws={"label": "SyscaLLM - Random (%)"} if show_cbar else None,
             annot_kws={"fontsize": 8},
             ax=ax
         )
