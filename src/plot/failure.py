@@ -259,7 +259,7 @@ def plot_outcome_per_syscall(llm, random):
         plt.close()
 
 
-def plot_outcome_per_syscall_heatmap(llm, random):
+def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
     def aggregate_and_compute_outcomes(df, label, all_syscalls):
         # aggregate each failure type per aut, mode, syscall
         agg = df.groupby(['aut', 'mode', 'syscall'])[outcome_types].sum().div(runs).reset_index()
@@ -339,21 +339,13 @@ def plot_outcome_per_syscall_heatmap(llm, random):
 
     n_auts = len(auts)
 
-    fig, axs = plt.subplots(1, n_auts, figsize=(3.5 * len(diff_df['mode'].unique()) * n_auts, 25), sharey=True)
+    fig, axs = plt.subplots(1, n_auts, figsize=(2.5 * len(diff_df['mode'].unique()) * n_auts, 18), sharey=True)
 
     if n_auts == 1:
         axs = [axs]  # ensure axs is iterable
 
     vmin, vmax = -100, 100
-    # Create a custom colormap with white in the middle
-    cmap = mpl.colors.LinearSegmentedColormap.from_list(
-        "custom_RdBu_white",
-        [
-            (0.0, "#2166ac"),   # blue
-            (0.5, "#ffffff"),   # white at the center
-            (1.0, "#b2182b")    # red
-        ]
-    )
+    cmap = "RdBu_r"
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
     sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])
@@ -384,7 +376,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
                         val_llm = mode_df[f'{failure}_llm'].values[0] 
                         diff_val = val_llm - val_rnd
                         row.append(diff_val)
-                        annot_row.append(f"{val_rnd:.2f} {val_llm:.2f}")
+                        annot_row.append(f"{val_rnd:.0f}  {val_llm:.0f}")
             pivot_data[syscall] = row
             annot_data[syscall] = annot_row
 
@@ -402,10 +394,10 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             vmax=vmax,
             linewidths=0.5,
             linecolor='lightgrey',
-            annot=annot,
+            annot=annot if text else None,
             fmt="",
             cbar=False,
-            annot_kws={"fontsize": 8},
+            annot_kws={"fontsize": 9},
             ax=ax
         )
 
@@ -430,19 +422,19 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         ax.set_ylabel(None)
         ax.set_title(f"{aut}", fontsize=14)
 
-    cbar_ax = fig.add_axes([0.3, 0.03, 0.4, 0.015])
+    cbar_ax = fig.add_axes([0.95, 0.3, 0.01, 0.4])
     cbar = fig.colorbar(
         sm,
         cax=cbar_ax,
-        orientation='horizontal',
+        orientation='vertical',
         fraction=0.03,
         pad=0.02
     )
     cbar.set_label("SyscaLLM - Random (%)", fontsize=12)
-    cbar.ax.xaxis.set_ticks_position('bottom')
-    cbar.ax.xaxis.set_label_position('bottom')
+    cbar.ax.yaxis.set_ticks_position('right')
+    cbar.ax.yaxis.set_label_position('right')
 
-    plt.subplots_adjust(left=0.05, right=0.99, top=0.97, bottom=0.05, wspace=0.01)
+    plt.subplots_adjust(left=0.05, right=0.94, top=0.97, bottom=0.01, wspace=0.01)
     plt.savefig("figures/failure_per_syscall_diff_heatmap.png", dpi=300)
     plt.close()
 
@@ -861,7 +853,7 @@ def main():
     # plot_outcome_per_syscall(all_llm_data, all_random_data)
 
     # plot failure types by syscall with heatmap
-    plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data)
+    plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data, text=False)
 
     # # plot failure types by syscall
     # plot_failure_per_syscall(all_llm_data, all_random_data)
