@@ -322,28 +322,36 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         for mode in aut_df['mode'].unique():
             for failure in failure_types:
                 columns.append((mode, failure))
-        # Build pivot table
+        # Build pivot table for heatmap values and for annotations
         pivot_data = {}
+        annot_data = {}
         for syscall in aut_df['syscall'].unique():
             row = []
+            annot_row = []
             for mode in aut_df['mode'].unique():
                 mode_df = aut_df[(aut_df['mode'] == mode) & (aut_df['syscall'] == syscall)]
                 for failure in failure_types:
-                    val = mode_df[f'{failure}_diff'].values[0] if not mode_df.empty else 0
-                    row.append(val)
+                    val_rnd = mode_df[f'{failure}_rnd'].values[0] if not mode_df.empty and pd.notnull(mode_df[f'{failure}_rnd'].values[0]) else 0
+                    val_llm = mode_df[f'{failure}_llm'].values[0] if not mode_df.empty and pd.notnull(mode_df[f'{failure}_llm'].values[0]) else 0
+                    diff_val = val_llm - val_rnd
+                    row.append(diff_val)
+                    annot_row.append(f"{val_rnd:.1f}, {val_llm:.1f}")
             pivot_data[syscall] = row
+            annot_data[syscall] = annot_row
         pivot = pd.DataFrame.from_dict(pivot_data, orient='index', columns=pd.MultiIndex.from_tuples(columns))
+        annot = pd.DataFrame.from_dict(annot_data, orient='index', columns=pd.MultiIndex.from_tuples(columns))
         pivot = pivot.sort_index()
+        annot = annot.loc[pivot.index]
 
-        plt.figure(figsize=(2 + 2 * len(aut_df['mode'].unique()), 12))
+        plt.figure(figsize=(5 + 2 * len(aut_df['mode'].unique()), 12))
         ax = sns.heatmap(
             pivot,
             cmap="RdBu_r",
             center=0,
             linewidths=0.5,
             linecolor='lightgrey',
-            annot=True,
-            fmt=".1f",
+            annot=annot,
+            fmt="",
             cbar_kws={"label": f"SyscaLLM - Random (%)"}
         )
         plt.title(f"{aut}", fontsize=14)
