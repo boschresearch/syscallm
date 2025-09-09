@@ -363,7 +363,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
                         val_llm = mode_df[f'{failure}_llm'].values[0] 
                         diff_val = val_llm - val_rnd
                         row.append(diff_val)
-                        annot_row.append(f"{val_rnd:.2f}, {val_llm:.2f}")
+                        annot_row.append(f"{val_rnd:.2f}\n{val_llm:.2f}")
             pivot_data[syscall] = row
             annot_data[syscall] = annot_row
         pivot = pd.DataFrame.from_dict(pivot_data, orient='index', columns=pd.MultiIndex.from_tuples(columns))
@@ -371,7 +371,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         pivot = pivot.sort_index()
         annot = annot.loc[pivot.index]
 
-        plt.figure(figsize=(5 + 2 * len(aut_df['mode'].unique()), 12))
+        plt.figure(figsize=(2 + 2 * len(aut_df['mode'].unique()), 23))
         ax = sns.heatmap(
             pivot,
             cmap="RdBu_r",
@@ -380,8 +380,11 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             linecolor='lightgrey',
             annot=annot,
             fmt="",
-            cbar_kws={"label": f"SyscaLLM - Random (%)"}
+            cbar_kws={"label": f"SyscaLLM - Random (%)"},
+            annot_kws={"fontsize": 8},
         )
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=8, va='center', rotation=0)
+        ax.tick_params(axis='y', pad=8)
         plt.title(f"{aut}", fontsize=14)
         plt.xticks(rotation=45, ha='right')
         plt.yticks(ticks=range(len(pivot.index)), labels=pivot.index, fontsize=8)
