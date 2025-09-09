@@ -336,21 +336,27 @@ def plot_outcome_per_syscall_heatmap(llm, random):
     diff_df = pd.concat(diffs, ignore_index=True)
     diff_df.to_csv("figures/outcome_per_syscall_diff.csv", index=False)
 
-    # plot a single figure with subplots for all auts
-    auts_list = diff_df['aut'].unique()
-    n_auts = len(auts_list)
-    fig, axs = plt.subplots(1, n_auts, figsize=(2 * len(diff_df['mode'].unique()) * n_auts, 23), sharey=True)
+    n_auts = len(auts)
+
+    fig, axs = plt.subplots(1, n_auts, figsize=(3.5 * len(diff_df['mode'].unique()) * n_auts, 18), sharey=True, gridspec_kw={"wspace": 0.0})
 
     if n_auts == 1:
         axs = [axs]  # ensure axs is iterable
 
-    for idx, aut in enumerate(auts_list):
+    vmin, vmax = -100, 100
+    cmap = "RdBu_r"
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    sm.set_array([])
+
+    for idx, aut in enumerate(auts):
         aut_df = diff_df[diff_df['aut'] == aut]
         # create a multi-index columns: (mode, failure)
         columns = []
         for mode in aut_df['mode'].unique():
             for failure in failure_types + ['total']:
                 columns.append((mode, failure))
+
         # build pivot table for heatmap values and for annotations
         pivot_data = {}
         annot_data = {}
@@ -361,50 +367,58 @@ def plot_outcome_per_syscall_heatmap(llm, random):
                 mode_df = aut_df[(aut_df['mode'] == mode) & (aut_df['syscall'] == syscall)]
 
                 if mode_df.empty:
-                    row.extend([0] * len(failure_types))
-                    annot_row.extend([''] * len(failure_types))
+                    row.extend([0] * (len(failure_types) + 1))
+                    annot_row.extend([''] * (len(failure_types) + 1))
                 else:
                     for failure in failure_types + ['total']:
                         val_rnd = mode_df[f'{failure}_rnd'].values[0] 
                         val_llm = mode_df[f'{failure}_llm'].values[0] 
                         diff_val = val_llm - val_rnd
                         row.append(diff_val)
-                        annot_row.append(f"{val_rnd:.2f}\n{val_llm:.2f}")
+                        annot_row.append(f"{val_rnd:.2f} {val_llm:.2f}")
             pivot_data[syscall] = row
             annot_data[syscall] = annot_row
+
         pivot = pd.DataFrame.from_dict(pivot_data, orient='index', columns=pd.MultiIndex.from_tuples(columns))
         annot = pd.DataFrame.from_dict(annot_data, orient='index', columns=pd.MultiIndex.from_tuples(columns))
         pivot = pivot.sort_index()
         annot = annot.loc[pivot.index]
 
         ax = axs[idx]
-        show_cbar = (idx == n_auts - 1)
         sns.heatmap(
             pivot,
-            cmap="RdBu_r",
+            cmap=cmap,
             center=0,
+            vmin=vmin,
+            vmax=vmax,
             linewidths=0.5,
             linecolor='lightgrey',
             annot=annot,
             fmt="",
-            cbar=show_cbar,
-            cbar_kws={"label": "SyscaLLM - Random (%)"} if show_cbar else None,
+            cbar=False,
             annot_kws={"fontsize": 8},
             ax=ax
         )
         ax.set_yticklabels(ax.get_yticklabels(), fontsize=8, va='center', rotation=0)
-        ax.tick_params(axis='y', pad=8)
-        ax.set_title(f"{aut}", fontsize=14)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=8)
-        if idx > 0:
-            ax.set_ylabel(None)
-        else:
-            ax.set_ylabel("Syscall", fontsize=10)
         ax.set_yticks(ticks=range(len(pivot.index)))
         ax.set_yticklabels(pivot.index, fontsize=8)
+        ax.set_xlabel(None)
+        ax.set_ylabel(None)
+        ax.set_title(f"{aut}", fontsize=14)
 
-    plt.subplots_adjust(wspace=0.01)
-    plt.tight_layout()
+    cbar = fig.colorbar(
+        sm,
+        ax=axs,
+        orientation='horizontal',
+        fraction=0.03,
+        pad=0.08
+    )
+    cbar.set_label("SyscaLLM - Random (%)", fontsize=12)
+    cbar.ax.xaxis.set_ticks_position('bottom')
+    cbar.ax.xaxis.set_label_position('bottom')
+
+    plt.tight_layout(rect=[0, 0.87, 1, 1])
     plt.savefig("figures/failure_per_syscall_diff_heatmap.png", dpi=300)
     plt.close()
 
