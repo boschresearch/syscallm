@@ -336,8 +336,15 @@ def plot_outcome_per_syscall_heatmap(llm, random):
     diff_df = pd.concat(diffs, ignore_index=True)
     diff_df.to_csv("figures/outcome_per_syscall_diff.csv", index=False)
 
-    # Now plot per aut, with all failures for each mode
-    for aut in diff_df['aut'].unique():
+    # Plot a single figure with subplots for all auts
+    auts_list = diff_df['aut'].unique()
+    n_auts = len(auts_list)
+    fig, axs = plt.subplots(1, n_auts, figsize=(len(diff_df['mode'].unique()) * n_auts, 23), sharey=True)
+
+    if n_auts == 1:
+        axs = [axs]  # ensure axs is iterable
+
+    for idx, aut in enumerate(auts_list):
         aut_df = diff_df[diff_df['aut'] == aut]
         # Create a multi-index columns: (mode, failure)
         columns = []
@@ -354,7 +361,6 @@ def plot_outcome_per_syscall_heatmap(llm, random):
                 mode_df = aut_df[(aut_df['mode'] == mode) & (aut_df['syscall'] == syscall)]
 
                 if mode_df.empty:
-                    # no data for this syscall/mode, append NaNs
                     row.extend([0] * len(failure_types))
                     annot_row.extend([''] * len(failure_types))
                 else:
@@ -371,8 +377,8 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         pivot = pivot.sort_index()
         annot = annot.loc[pivot.index]
 
-        plt.figure(figsize=(2 + 2 * len(aut_df['mode'].unique()), 23))
-        ax = sns.heatmap(
+        ax = axs[idx]
+        sns.heatmap(
             pivot,
             cmap="RdBu_r",
             center=0,
@@ -380,17 +386,24 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             linecolor='lightgrey',
             annot=annot,
             fmt="",
-            cbar_kws={"label": f"SyscaLLM - Random (%)"},
+            cbar_kws={"label": f"SyscaLLM - Random (%)"} if idx == n_auts - 1 else None,
             annot_kws={"fontsize": 8},
+            ax=ax
         )
         ax.set_yticklabels(ax.get_yticklabels(), fontsize=8, va='center', rotation=0)
         ax.tick_params(axis='y', pad=8)
-        plt.title(f"{aut}", fontsize=14)
-        plt.xticks(rotation=45, ha='right')
-        plt.yticks(ticks=range(len(pivot.index)), labels=pivot.index, fontsize=8)
-        plt.tight_layout()
-        plt.savefig(f"figures/{aut}_diff_heatmap.png", dpi=300)
-        plt.close()
+        ax.set_title(f"{aut}", fontsize=14)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=8)
+        if idx > 0:
+            ax.set_ylabel(None)
+        else:
+            ax.set_ylabel("Syscall", fontsize=10)
+        ax.set_yticks(ticks=range(len(pivot.index)))
+        ax.set_yticklabels(pivot.index, fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig("figures/all_aut_diff_heatmap.png", dpi=300)
+    plt.close()
 
 
 def plot_failure_per_syscall(llm, random):
