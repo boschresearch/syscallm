@@ -345,7 +345,15 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         axs = [axs]  # ensure axs is iterable
 
     vmin, vmax = -100, 100
-    cmap = "RdBu_r"
+    # Create a custom colormap with white in the middle
+    cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        "custom_RdBu_white",
+        [
+            (0.0, "#2166ac"),   # blue
+            (0.5, "#ffffff"),   # white at the center
+            (1.0, "#b2182b")    # red
+        ]
+    )
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
     sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     sm.set_array([])
