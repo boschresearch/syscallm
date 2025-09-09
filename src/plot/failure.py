@@ -339,7 +339,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
     # plot a single figure with subplots for all auts
     auts_list = diff_df['aut'].unique()
     n_auts = len(auts_list)
-    fig, axs = plt.subplots(1, n_auts, figsize=(len(diff_df['mode'].unique()) * n_auts, 23), sharey=True)
+    fig, axs = plt.subplots(1, n_auts, figsize=(2 * len(diff_df['mode'].unique()) * n_auts, 23), sharey=True)
 
     if n_auts == 1:
         axs = [axs]  # ensure axs is iterable
@@ -403,8 +403,9 @@ def plot_outcome_per_syscall_heatmap(llm, random):
         ax.set_yticks(ticks=range(len(pivot.index)))
         ax.set_yticklabels(pivot.index, fontsize=8)
 
+    plt.subplots_adjust(wspace=0.01)
     plt.tight_layout()
-    plt.savefig("figures/all_aut_diff_heatmap.png", dpi=300)
+    plt.savefig("figures/failure_per_syscall_diff_heatmap.png", dpi=300)
     plt.close()
 
 
