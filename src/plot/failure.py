@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from itertools import chain
 import seaborn as sns
+import numpy as np
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
@@ -334,11 +335,10 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             diffs.append(pd.DataFrame(diff_dict))
 
     diff_df = pd.concat(diffs, ignore_index=True)
-    diff_df.to_csv("figures/outcome_per_syscall_diff.csv", index=False)
 
     n_auts = len(auts)
 
-    fig, axs = plt.subplots(1, n_auts, figsize=(3.5 * len(diff_df['mode'].unique()) * n_auts, 22), sharey=True, constrained_layout=True, gridspec_kw={'wspace': 0})
+    fig, axs = plt.subplots(1, n_auts, figsize=(3.5 * len(diff_df['mode'].unique()) * n_auts, 25), sharey=True)
 
     if n_auts == 1:
         axs = [axs]  # ensure axs is iterable
@@ -399,8 +399,19 @@ def plot_outcome_per_syscall_heatmap(llm, random):
             annot_kws={"fontsize": 8},
             ax=ax
         )
+        
+        ax.xaxis.set_ticks_position('top')
+        ax.xaxis.set_label_position('top')
+        xtick_labels = pivot.columns
+        ax.set_xticks(np.arange(len(xtick_labels)) + 0.5)  # center ticks
+        ax.set_xticklabels(
+            [f"{mode}\n{failure}" for mode, failure in xtick_labels],
+            rotation=0,
+            ha='center',
+            fontsize=7
+        )
+
         ax.set_yticklabels(ax.get_yticklabels(), fontsize=8, va='center', rotation=0)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=8)
         ax.set_yticks(ticks=range(len(pivot.index)))
         ax.set_yticklabels(pivot.index)
         ax.set_xlabel(None)
@@ -419,6 +430,7 @@ def plot_outcome_per_syscall_heatmap(llm, random):
     cbar.ax.xaxis.set_ticks_position('bottom')
     cbar.ax.xaxis.set_label_position('bottom')
 
+    plt.subplots_adjust(left=0.05, right=0.99, top=0.97, bottom=0.05, wspace=0.01)
     plt.savefig("figures/failure_per_syscall_diff_heatmap.png", dpi=300)
     plt.close()
 
