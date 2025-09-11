@@ -316,7 +316,7 @@ if __name__ == "__main__":
         bottom += out_of_bound
         ax.bar(X_POS, enumeration, bar_w, label='Enumeration', color='darkgrey', hatch='\\', edgecolor='black', bottom=bottom)
         bottom += enumeration
-        ax.bar(X_POS, loop, bar_w, label='Loop', color='darkgrey', hatch='oo', edgecolor='black', bottom=bottom)
+        ax.bar(X_POS, loop, bar_w, label='Looping', color='darkgrey', hatch='oo', edgecolor='black', bottom=bottom)
 
         midpoints = [i * (N_TEMPS + 1) + (N_TEMPS - 1) / 2 for i in range(len(models))]
         ax.set_xlim(X_MIN - 0.6, X_MAX + 0.6)
@@ -327,13 +327,17 @@ if __name__ == "__main__":
         ax.set_ylim(0, 100)
         ax.grid(axis='y', visible=True, linestyle='--', linewidth=0.5)
         ax.set_yticks(range(0, 101, 10))
-        ax.set_title(f"{mode}", fontsize=13)
+
+        if mode == "success":
+            ax.set_title("Nonnegative", fontsize=13)
+        elif mode == "error_code":
+            ax.set_title("Negative", fontsize=13)
 
     handles = [
         Patch(facecolor='white', edgecolor='black', hatch='///', label='Clean'),
         Patch(facecolor='white', edgecolor='black', hatch='...', label='OOB'),
         Patch(facecolor='darkgrey', edgecolor='black', hatch='\\', label='Enumeration'),
-        Patch(facecolor='darkgrey', edgecolor='black', hatch='oo', label='Loop'),
+        Patch(facecolor='darkgrey', edgecolor='black', hatch='oo', label='Looping'),
     ]
     fig.legend(
         handles=handles,
