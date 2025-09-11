@@ -792,6 +792,70 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
     plt.close()
 
 
+def plot_cumulative(llm, random):
+    # only run 1 for cumulative
+    llm = llm[llm['run'] == 1]
+    random = random[random['run'] == 1]
+
+    for aut in llm['aut'].unique():
+        for mode in llm['mode'].unique():
+            subset_llm = llm[(llm['aut'] == aut) & (llm['mode'] == mode)]
+            subset_random = random[(random['aut'] == aut) & (random['mode'] == mode)]
+
+            subset_llm = subset_llm.copy()
+            subset_random = subset_random.copy()
+
+            subset_llm = subset_llm.sample(n=50, random_state=42) if len(subset_llm) > 50 else subset_llm
+            subset_random = subset_random[subset_random['id'].isin(subset_llm['id'])]
+
+            subset_llm = subset_llm.sort_values(by="id")
+            subset_random = subset_random.sort_values(by="id")
+
+            for failure in failure_types:
+                subset_llm[f"{failure}_llm"] = subset_llm[failure].astype(bool).cumsum()
+                subset_random[f"{failure}_rnd"] = subset_random[failure].astype(bool).cumsum()
+
+            subset_llm = subset_llm.drop(columns=failure_types)
+            subset_random = subset_random.drop(columns=failure_types)
+
+            merged = pd.merge(
+                subset_llm,
+                subset_random,
+                on=['aut', 'mode', 'run', 'id', 'syscall'],
+                how='outer'
+            )
+
+            plt.figure(figsize=(10, 6))
+            color_map = dict(zip(failure_types, colors[:len(failure_types)]))
+            for failure in failure_types:
+                plt.plot(
+                    merged.index,
+                    merged[f"{failure}_llm"],
+                    label=f"{failure} (LLM)",
+                    linewidth=2,
+                    color=color_map[failure]
+                )
+                plt.plot(
+                    merged.index,
+                    merged[f"{failure}_rnd"],
+                    label=f"{failure} (Random)",
+                    linestyle='dotted',
+                    linewidth=2,
+                    color=color_map[failure]
+                )
+
+            plt.xlabel("Test Case Index", fontsize=14)
+            plt.ylabel("Cumulative Count", fontsize=14)
+            plt.title(f"Cumulative Outcomes for {aut} - {mode}", fontsize=16)
+            plt.legend(fontsize=12)
+            plt.grid(linestyle='--', alpha=0.7)
+            plt.tight_layout()
+            plt.savefig(f"figures/cumulative_failure_{aut}_{mode}.png", dpi=300)
+            plt.close()
+            
+
+
+
 def main():    
     # initialize accumulators as empty Series
     all_llm_data = pd.DataFrame() 
@@ -853,13 +917,16 @@ def main():
     # plot_outcome_per_syscall(all_llm_data, all_random_data)
 
     # plot failure types by syscall with heatmap
-    plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data, text=False)
+    # plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data, text=False)
 
     # # plot failure types by syscall
     # plot_failure_per_syscall(all_llm_data, all_random_data)
 
     # # plot silent data corruption by syscall
     # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
+
+    # plot cumulative
+    plot_cumulative(all_llm_data, all_random_data)
 
 
 if __name__ == "__main__":
