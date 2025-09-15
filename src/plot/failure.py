@@ -408,7 +408,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
             n_xticks = len(pivot.columns)
             ax.set_xticks(np.arange(n_xticks) + 0.5)
             ax.set_xticklabels(
-                renamed_failure_types + ["Failure Sum"] + [" "] * 5,
+                ["App\nCrash", "App\nHang", "Error\nExit", "SDC"] + ["Sum"] + [" "] * 5,
                 rotation=90,
                 fontsize=13
             )
@@ -416,11 +416,11 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
             # add "nonnegative" and "negative" as text labels above the corresponding groups
             pos_nonneg = int(n_xticks * 0.25)
             pos_neg = int(n_xticks * 0.75)
-            ax.text(pos_nonneg + 0.5, -5.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
-            ax.text(pos_neg + 0.5, -5.5, 'negative', ha='center', va='bottom', fontsize=13)
+            ax.text(pos_nonneg + 0.5, -3.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
+            ax.text(pos_neg + 0.5, -3.5, 'negative', ha='center', va='bottom', fontsize=13)
         else:
             ax.set_xticklabels(
-                renamed_failure_types + ["Failure Sum"] + [" "] * 5,
+                ["App\nCrash", "App\nHang", "Error\nExit", "SDC"] + ["Sum"] + [" "] * 5,
                 rotation=90,
                 fontsize=13,
                 color='white'
@@ -446,7 +446,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
     cbar.ax.xaxis.set_ticks_position('bottom')
     cbar.ax.xaxis.set_label_position('bottom')
 
-    plt.subplots_adjust(left=0.09, right=1, top=0.91, bottom=0.04, wspace=0)
+    plt.subplots_adjust(left=0.09, right=1, top=0.94, bottom=0.04, wspace=0)
     plt.savefig("figures/failure_heatmap.png", dpi=300)
     plt.close()
 
