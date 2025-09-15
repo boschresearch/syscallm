@@ -18,21 +18,20 @@ modes = config.modes
 auts = config.auts
 baseline = config.baseline
 data_dir = config.data_dir
-
-temperature = "0.5"
+temperature = config.temperature
 
 plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
 failure_types = ['app_crash', 'app_hang', 'error_exit', 'silent_data_corruption']
 outcome_types = ['no_changes'] + failure_types
-renamed_failure_types = ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
-renamed_outcome_types = ['No Changes', 'App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption']
+renamed_failure_types = ['App Crash', 'App Hang', 'Error Exit', 'SDC']
+renamed_outcome_types = ['No Changes', 'App Crash', 'App Hang', 'Error Exit', 'SDC']
 
 palette = {
     'App Crash': colors[0],
     'App Hang': colors[1],
     'Error Exit': colors[2],
-    'Silent Data Corruption': colors[3],
+    'SDC': colors[3],
     'No Changes': colors[4]
 }
 
@@ -268,7 +267,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
         # ensure all syscalls are present for each aut/mode
         result = []
         for aut in agg['aut'].unique():
-            for mode in agg['mode'].unique():
+            for mode in sorted(agg['mode'].unique(), reverse=True):
                 # filter for this aut/mode
                 aut_mode_df = agg[(agg['aut'] == aut) & (agg['mode'] == mode)]
 
@@ -376,7 +375,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
                         val_llm = mode_df[f'{failure}_llm'].values[0] 
                         diff_val = val_llm - val_rnd
                         row.append(diff_val)
-                        annot_row.append(f"{val_rnd:.0f}  {val_llm:.0f}")
+                        annot_row.append(f"{val_rnd:.0f},{val_llm:.0f}")
             pivot_data[syscall] = row
             annot_data[syscall] = annot_row
 
@@ -397,45 +396,58 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
             annot=annot if text else None,
             fmt="",
             cbar=False,
-            annot_kws={"fontsize": 9},
+            annot_kws={"fontsize": 10},
             ax=ax
         )
 
         ax.add_patch(Rectangle((4, 0), 1, len(all_syscalls), fill=False, edgecolor='black', lw=1.5))
         ax.add_patch(Rectangle((9, 0), 1, len(all_syscalls), fill=False, edgecolor='black', lw=1.5))
         
-        ax.xaxis.set_ticks_position('top')
-        ax.xaxis.set_label_position('top')
-        xtick_labels = pivot.columns
-        ax.set_xticks(np.arange(len(xtick_labels)) + 0.5)  # center ticks
-        ax.set_xticklabels(
-            [f"{mode}\n{failure}" for mode, failure in xtick_labels],
-            rotation=0,
-            ha='center',
-            fontsize=7
-        )
+        # primary x ticks (failure types) only for the very first subplot
+        if idx == 0:
+            n_xticks = len(pivot.columns)
+            ax.set_xticks(np.arange(n_xticks) + 0.5)
+            ax.set_xticklabels(
+                renamed_failure_types + ["Failure Sum"] + [" "] * 5,
+                rotation=90,
+                fontsize=13
+            )
 
-        ax.set_yticklabels(ax.get_yticklabels(), fontsize=8, va='center', rotation=0)
+            # add "nonnegative" and "negative" as text labels above the corresponding groups
+            pos_nonneg = int(n_xticks * 0.25)
+            pos_neg = int(n_xticks * 0.75)
+            ax.text(pos_nonneg + 0.5, -5.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
+            ax.text(pos_neg + 0.5, -5.5, 'negative', ha='center', va='bottom', fontsize=13)
+        else:
+            ax.set_xticklabels(
+                renamed_failure_types + ["Failure Sum"] + [" "] * 5,
+                rotation=90,
+                fontsize=13,
+                color='white'
+            )
+        # move primary xticks below the text labels
+        ax.xaxis.set_label_position('top')
+        ax.xaxis.set_ticks_position('top')
+
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=13, va='center', rotation=0)
         ax.set_yticks(ticks=range(len(pivot.index)))
         ax.set_yticklabels(pivot.index)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
-        ax.set_title(f"{aut}", fontsize=14)
-
-    cbar_ax = fig.add_axes([0.95, 0.3, 0.01, 0.4])
+        ax.set_title(f"{aut}", fontsize=16, fontweight='bold', pad=20)
+ 
+    cbar_ax = fig.add_axes([0.1, 0.025, 0.89, 0.01])
     cbar = fig.colorbar(
         sm,
         cax=cbar_ax,
-        orientation='vertical',
-        fraction=0.03,
-        pad=0.02
+        orientation='horizontal'
     )
-    cbar.set_label("SyscaLLM - Random (%)", fontsize=12)
-    cbar.ax.yaxis.set_ticks_position('right')
-    cbar.ax.yaxis.set_label_position('right')
+    cbar.set_label("SyscaLLM - Random (%)", fontsize=14)
+    cbar.ax.xaxis.set_ticks_position('bottom')
+    cbar.ax.xaxis.set_label_position('bottom')
 
-    plt.subplots_adjust(left=0.05, right=0.94, top=0.97, bottom=0.01, wspace=0.01)
-    plt.savefig("figures/failure_per_syscall_diff_heatmap.png", dpi=300)
+    plt.subplots_adjust(left=0.09, right=1, top=0.91, bottom=0.04, wspace=0)
+    plt.savefig("figures/failure_heatmap.png", dpi=300)
     plt.close()
 
 
@@ -483,7 +495,7 @@ def plot_failure_per_syscall(llm, random):
                     ax=ax,
                     color=['#FF8C00', '#6A5ACD'],
                     legend=(i == len(renamed_failure_types) - 1),
-                    logx=(outcome in ['App Crash', 'App Hang', 'Error Exit', 'Silent Data Corruption'])
+                    logx=(outcome in ['App Crash', 'App Hang', 'Error Exit', 'SDC'])
                 )
 
                 ax.set_title(outcome, fontsize=14)
@@ -917,7 +929,7 @@ def main():
     # plot_outcome_per_syscall(all_llm_data, all_random_data)
 
     # plot failure types by syscall with heatmap
-    # plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data, text=False)
+    plot_outcome_per_syscall_heatmap(all_llm_data, all_random_data, text=True)
 
     # # plot failure types by syscall
     # plot_failure_per_syscall(all_llm_data, all_random_data)
