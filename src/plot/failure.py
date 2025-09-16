@@ -435,7 +435,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
         ax.set_yticklabels(pivot.index)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
-        ax.set_title(f"{aut}", fontsize=16, fontweight='bold', pad=20)
+        ax.set_title(f"{aut.capitalize()}", fontsize=16, fontweight='bold', pad=20)
  
     cbar_ax = fig.add_axes([0.1, 0.025, 0.89, 0.01])
     cbar = fig.colorbar(
