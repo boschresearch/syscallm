@@ -925,6 +925,7 @@ def plot_cumulative(llm, random):
                     merged[f"{failure}_llm"],
                     label=f"{failure} (SyscaLLM)",
                     linewidth=2,
+                    alpha=0.5,
                     color=color_map[failure]
                 )
                 line_rnd, = ax.plot(
@@ -933,6 +934,7 @@ def plot_cumulative(llm, random):
                     label=f"{failure} (Random)",
                     linestyle='dotted',
                     linewidth=2,
+                    alpha=0.5,
                     color=color_map[failure]
                 )
                 if row_idx == 0 and col_idx == 0:
