@@ -804,6 +804,75 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
     plt.close()
 
 
+def plot_error_instances_failure(aut, mode, llm_config, random_config, llm, random):
+    datasets = [
+        ('SyscaLLM (GPT-4o)', llm, llm_config),
+        ('Random (Log-Uniform)', random, random_config)
+    ]
+
+    # get injected values for all outcomes (merged)
+    dfs = {}
+    for label, data, config in datasets:
+        # collect all rows where any outcome is True
+        mask = data[outcome_types].any(axis=1)
+        df = data[mask].copy()
+        if df.empty:
+            df['val'] = pd.Series(dtype=int)
+        else:
+            if mode == "success":
+                df['val'] = df.apply(
+                    lambda row: extract_retval(f"{config}/run{row['run']}/{row['id']}.json"),
+                    axis=1
+                )
+            elif mode == "error_code":
+                df['val'] = df.apply(
+                    lambda row: extract_error(f"{config}/run{row['run']}/{row['id']}.json"),
+                    axis=1
+                )
+        dfs[label] = df
+
+    all_syscalls = sorted(set(
+        chain.from_iterable(
+            df['syscall'].dropna().unique().tolist()
+            for df in dfs.values() if not df.empty
+        )
+    ), reverse=True)
+    syscall_to_y = {name: i for i, name in enumerate(all_syscalls)}
+
+    fig, ax = plt.subplots(figsize=(6, 8))
+    color_map = {
+        'SyscaLLM (GPT-4o)': '#1F77B4',  # blue
+        'Random (Log-Uniform)': '#D62728',  # red
+        'Random (Log)': '#D62728',  # red (for consistency if label is 'Random (Log)')
+    }
+    for label, df in dfs.items():
+        if not df.empty:
+            df = df.copy()
+            df['y_pos'] = df['syscall'].map(syscall_to_y)
+            ax.scatter(
+                df['val'],
+                df['y_pos'],
+                s=8,
+                label=label,
+                alpha=0.7,
+                color=color_map.get(label, 'black'),
+                marker='o' if 'LLM' in label else 'x'
+            )
+        else:
+            ax.text(0.5, 0.5, f'No data for {label}', ha='center', va='center', fontsize=11, alpha=0.7, transform=ax.transAxes)
+
+    ax.set_yticks(list(syscall_to_y.values()))
+    ax.set_yticklabels(list(syscall_to_y.keys()), fontsize=11)
+    ax.set_xlabel('Error Code (log scale)' if mode == 'error_code' else 'Return Value (log scale)', fontsize=13)
+    ax.set_ylabel(None)
+    ax.set_xscale('log')
+    ax.grid(linestyle='--', alpha=0.6)
+    ax.legend(fontsize=11, ncol=2, bbox_to_anchor=(0.05, 0., 0.9, 1.01), loc='upper center', edgecolor='black')
+    plt.tight_layout()
+    plt.savefig(f"figures/error_values_{aut}_{mode}_merged.png", dpi=300)
+    plt.close()
+
+
 def plot_cumulative(llm, random):
     # only run 1 for cumulative
     llm = llm[llm['run'] == 1]
