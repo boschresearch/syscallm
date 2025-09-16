@@ -790,17 +790,16 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
                 ax.set_ylabel(None)
 
             ax.set_xlabel(None)
-            ax.tick_params(axis='x', labelsize=10)
-            ax.tick_params(axis='y', labelsize=10)
+            ax.tick_params(axis='x', labelsize=12)
             ax.set_xscale('log')
-            ax.grid(linestyle='--', alpha=0.6)
-
             ax.set_yticks(list(syscall_to_y.values()))
             ax.set_yticklabels(list(syscall_to_y.keys()), fontsize=10)
+            ax.grid(linestyle='--', alpha=0.6)
 
     # shared x-label
     xlabel = 'Error Code (log scale)' if mode == 'error_code' else 'Return Value (log scale)'
     fig.supxlabel(xlabel, fontsize=14)
+    plt.tight_layout()
     plt.savefig(f"figures/error_values_{aut}_{mode}.png", dpi=300)
     plt.close()
 
