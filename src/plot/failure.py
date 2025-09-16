@@ -414,10 +414,8 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
             )
 
             # add "nonnegative" and "negative" as text labels above the corresponding groups
-            pos_nonneg = int(n_xticks * 0.25)
-            pos_neg = int(n_xticks * 0.75)
-            ax.text(pos_nonneg + 0.5, -3.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
-            ax.text(pos_neg + 0.5, -3.5, 'negative', ha='center', va='bottom', fontsize=13)
+            ax.text(int(n_xticks * 0.25) + 0.5, -3.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
+            ax.text(int(n_xticks * 0.75) + 0.5, -3.5, 'negative', ha='center', va='bottom', fontsize=13)
         else:
             ax.set_xticklabels(
                 ["App\nCrash", "App\nHang", "Error\nExit", "SDC"] + ["Sum"] + [" "] * 5,
@@ -425,6 +423,9 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
                 fontsize=13,
                 color='white'
             )
+        if idx == n_auts - 1:
+            ax.text(9.9, -0.3, 'Percentages of\nSyscaLLM, Random (Log-Uniform)', ha='right', va='bottom', fontsize=13)
+
         # move primary xticks below the text labels
         ax.xaxis.set_label_position('top')
         ax.xaxis.set_ticks_position('top')
