@@ -874,21 +874,34 @@ def plot_error_instances_failure(aut, mode, llm_config, random_config, llm, rand
 
 
 def plot_cumulative(llm, random):
-    # only run 1 for cumulative
-    llm = llm[llm['run'] == 1]
-    random = random[random['run'] == 1]
+    llm = llm[llm['run'] == 1].copy()
+    random = random[random['run'] == 1].copy()
 
-    for aut in llm['aut'].unique():
-        for mode in llm['mode'].unique():
-            subset_llm = llm[(llm['aut'] == aut) & (llm['mode'] == mode)]
-            subset_random = random[(random['aut'] == aut) & (random['mode'] == mode)]
+    llm['aut'] = llm['aut'].str.capitalize()
+    random['aut'] = random['aut'].str.capitalize()
+    llm['mode'] = llm['mode'].replace({'success': 'Nonnegative', 'error_code': 'Negative'})
+    random['mode'] = random['mode'].replace({'success': 'Nonnegative', 'error_code': 'Negative'})
 
-            subset_llm = subset_llm.copy()
-            subset_random = subset_random.copy()
+    auts = llm['aut'].unique()
+    modes = llm['mode'].unique()
+    n_rows = len(auts)
+    n_cols = len(modes)
+
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(4 * n_cols, 3.5 * n_rows), sharex=False, sharey=False)
+    axs = np.atleast_2d(axs)  # ensure axs is 2D
+
+    color_map = dict(zip(failure_types, colors[:len(failure_types)]))
+    legend_labels = []
+
+    for row_idx, aut in enumerate(auts):
+        for col_idx, mode in enumerate(modes):
+            ax = axs[row_idx, col_idx]
+
+            subset_llm = llm[(llm['aut'] == aut) & (llm['mode'] == mode)].copy()
+            subset_random = random[(random['aut'] == aut) & (random['mode'] == mode)].copy()
 
             subset_llm = subset_llm.sample(n=50, random_state=42) if len(subset_llm) > 50 else subset_llm
             subset_random = subset_random[subset_random['id'].isin(subset_llm['id'])]
-
             subset_llm = subset_llm.sort_values(by="id")
             subset_random = subset_random.sort_values(by="id")
 
@@ -906,17 +919,15 @@ def plot_cumulative(llm, random):
                 how='outer'
             )
 
-            plt.figure(figsize=(10, 6))
-            color_map = dict(zip(failure_types, colors[:len(failure_types)]))
             for failure in failure_types:
-                plt.plot(
+                line_llm, = ax.plot(
                     merged.index,
                     merged[f"{failure}_llm"],
-                    label=f"{failure} (LLM)",
+                    label=f"{failure} (SyscaLLM)",
                     linewidth=2,
                     color=color_map[failure]
                 )
-                plt.plot(
+                line_rnd, = ax.plot(
                     merged.index,
                     merged[f"{failure}_rnd"],
                     label=f"{failure} (Random)",
@@ -924,17 +935,31 @@ def plot_cumulative(llm, random):
                     linewidth=2,
                     color=color_map[failure]
                 )
+                if row_idx == 0 and col_idx == 0:
+                    legend_labels.extend([line_llm, line_rnd])
 
-            plt.xlabel("Test Case Index", fontsize=14)
-            plt.ylabel("Cumulative Count", fontsize=14)
-            plt.title(f"Cumulative Outcomes for {aut} - {mode}", fontsize=16)
-            plt.legend(fontsize=12)
-            plt.grid(linestyle='--', alpha=0.7)
-            plt.tight_layout()
-            plt.savefig(f"figures/cumulative_failure_{aut}_{mode}.png", dpi=300)
-            plt.close()
-            
+            ax.set_title(f"{aut} - {mode}", fontsize=13)
+            ax.set_xlabel(None)
+            ax.set_ylabel(None)
+            ax.grid(linestyle='--', alpha=0.6)
+            ax.tick_params(labelsize=12)
 
+    # Add a shared legend at the bottom
+    fig.legend(
+        handles=legend_labels,
+        loc='lower center',
+        ncol=2,
+        fontsize=12,
+        frameon=True,
+        bbox_to_anchor=(0.5, 0)
+    )
+
+    fig.supxlabel("Number of Injected Errors", fontsize=14, y=0.11)
+    fig.supylabel("Cumulative Count", fontsize=14)
+
+    plt.tight_layout(rect=[0, 0.1, 1, 1])  # leave space at bottom for legend
+    plt.savefig("figures/cumulative_failure.png", dpi=300)
+    plt.close()
 
 
 def main():    
@@ -978,8 +1003,8 @@ def main():
                 all_llm_data = pd.concat([all_llm_data, llm_data], ignore_index=True)
                 all_random_data = pd.concat([all_random_data, random_data], ignore_index=True)
 
-                # if r == 1:
-                #     plot_error_instances(aut, mode, llm_config, random_config, llm_data[(llm_data['aut'] == aut) & (llm_data['mode'] == mode)], random_data[(random_data['aut'] == aut) & (random_data['mode'] == mode)])
+                if r == 1:
+                    plot_error_instances_failure(aut, mode, llm_config, random_config, llm_data[(llm_data['aut'] == aut) & (llm_data['mode'] == mode)], random_data[(random_data['aut'] == aut) & (random_data['mode'] == mode)])
 
     # reorder columns for better readability
     column_order = ['aut', 'mode', 'run', 'id', 'syscall'] + outcome_types
