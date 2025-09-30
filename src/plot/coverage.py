@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 import matplotlib.patheffects as path_effects
 from collections import Counter
 import sys
@@ -295,13 +296,13 @@ if __name__ == "__main__":
         Y_POS = np.arange(len(models))
         bar_h = 0.6
         left = np.zeros_like(in_bound)
-        ax.barh(Y_POS, in_bound, bar_h, label='Clean', color='white', hatch='///', edgecolor='black', left=left)
+        ax.barh(Y_POS, in_bound, bar_h, label='Clean', color='white', edgecolor='black', left=left)
         left += in_bound
         ax.barh(Y_POS, out_of_bound, bar_h, label='OOB', color='white', hatch='...', edgecolor='black', left=left)
         left += out_of_bound
-        ax.barh(Y_POS, enumeration, bar_h, label='Enumeration', color='darkgrey', hatch='\\', edgecolor='black', left=left)
+        ax.barh(Y_POS, enumeration, bar_h, label='Enumeration', color='darkgrey', edgecolor='black', left=left)
         left += enumeration
-        ax.barh(Y_POS, loop, bar_h, label='Looping', color='darkgrey', hatch='oo', edgecolor='black', left=left)
+        ax.barh(Y_POS, loop, bar_h, label='Looping', color='darkgrey', hatch='///', edgecolor='black', left=left)
 
         ax.set_yticks(Y_POS)
         ax.set_yticklabels(df_combined_sorted['model_name'], fontsize=9)
@@ -314,20 +315,33 @@ if __name__ == "__main__":
         elif mode == "error_code":
             ax.set_title("Negative", fontsize=11)
 
-    handles = [
-        Patch(facecolor='white', edgecolor='black', hatch='///', label='Clean'),
+    # dummy entries for group titles
+    group_title_valid = Line2D([0], [0], color='none', label='Valid', linestyle='None')
+    group_title_invalid = Line2D([0], [0], color='none', label='Invalid', linestyle='None')
+
+    # actual legend handles
+    valid_handles = [
+        Patch(facecolor='white', edgecolor='black', label='Clean'),
         Patch(facecolor='white', edgecolor='black', hatch='...', label='OOB'),
-        Patch(facecolor='darkgrey', edgecolor='black', hatch='\\', label='Enumeration'),
-        Patch(facecolor='darkgrey', edgecolor='black', hatch='oo', label='Looping'),
     ]
+    invalid_handles = [
+        Patch(facecolor='darkgrey', edgecolor='black', label='Enumeration'),
+        Patch(facecolor='darkgrey', edgecolor='black', hatch='///', label='Looping'),
+    ]
+
+    # combine all into one list with titles
+    all_handles = [group_title_valid] + valid_handles + [group_title_invalid] + invalid_handles
+
     fig.legend(
-        handles=handles,
+        handles=all_handles,
         loc='center right',
-        bbox_to_anchor=(1.0, 0.5),
+        bbox_to_anchor=(1, 0.5),
+        frameon=False,
+        fontsize=9,
         ncol=1,
-        frameon=True,
-        fontsize=9
+        handlelength=2,
+        columnspacing=1
     )
     plt.subplots_adjust(hspace=0.2)
-    fig.tight_layout(rect=[0, 0, 0.83, 1])
+    fig.tight_layout(rect=[0, 0, 0.84, 1])
     fig.savefig("figures/coverage.png", dpi=300)
