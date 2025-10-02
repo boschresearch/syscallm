@@ -281,7 +281,6 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
                         entry = {'aut': aut, 'mode': mode, 'syscall': syscall, 'type': label}
                         for failure in failure_types:
                             entry[failure] = None
-                        entry['total failure'] = None
                         result.append(entry)
                     else:
                         # get the first (and only) row as dict
@@ -294,10 +293,8 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
                         for failure in failure_types:
                             entry[failure] = (entry[failure] / row_total * 100) if row_total > 0 else None
 
-                        # total failure rates
-                        entry['total failure'] = sum([entry[f] if entry[f] is not None else 0 for f in failure_types])
                         result.append(entry)
-        return pd.DataFrame(result, columns=['aut', 'mode', 'syscall', 'type', 'total failure'] + failure_types)
+        return pd.DataFrame(result, columns=['aut', 'mode', 'syscall', 'type'] + failure_types)
 
     # get the complete list of syscalls across all auts
     all_syscalls = sorted(set(llm['syscall'].unique()).union(set(random['syscall'].unique())))
@@ -317,7 +314,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
             merged = pd.merge(llm_subset, rnd_subset, on='syscall', suffixes=('_llm', '_rnd'), how='outer')
 
             diff_dict = {'aut': aut, 'mode': mode, 'syscall': merged['syscall']}
-            for failure in failure_types + ['total failure']:
+            for failure in failure_types:
                 # copy existing values
                 diff_dict[f'{failure}_llm'] = merged.get(f'{failure}_llm')
                 diff_dict[f'{failure}_rnd'] = merged.get(f'{failure}_rnd')
@@ -354,7 +351,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
         # create a multi-index columns: (mode, failure)
         columns = []
         for mode in aut_df['mode'].unique():
-            for failure in failure_types + ['total failure']:
+            for failure in failure_types:
                 columns.append((mode, failure))
 
         # build pivot table for heatmap values and for annotations
@@ -370,12 +367,12 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
                     row.extend([0] * (len(failure_types) + 1))
                     annot_row.extend([''] * (len(failure_types) + 1))
                 else:
-                    for failure in failure_types + ['total failure']:
+                    for failure in failure_types:
                         val_rnd = mode_df[f'{failure}_rnd'].values[0] 
                         val_llm = mode_df[f'{failure}_llm'].values[0] 
                         diff_val = val_llm - val_rnd
                         row.append(diff_val)
-                        annot_row.append(f"{val_rnd:.0f},{val_llm:.0f}")
+                        annot_row.append(f"{val_rnd:.0f};{val_llm:.0f}")
             pivot_data[syscall] = row
             annot_data[syscall] = annot_row
 
@@ -396,35 +393,26 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
             annot=annot if text else None,
             fmt="",
             cbar=False,
-            annot_kws={"fontsize": 10},
+            annot_kws={"fontsize": 12},
             ax=ax
         )
-
-        ax.add_patch(Rectangle((4, 0), 1, len(all_syscalls), fill=False, edgecolor='black', lw=1.5))
-        ax.add_patch(Rectangle((9, 0), 1, len(all_syscalls), fill=False, edgecolor='black', lw=1.5))
+        
+        n_xticks = len(pivot.columns)
+        
+        # add "nonnegative" and "negative" as text labels above the corresponding groups
+        ax.text(int(n_xticks * 0.25), -3.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
+        ax.text(int(n_xticks * 0.75), -3.5, 'negative', ha='center', va='bottom', fontsize=13)
         
         # primary x ticks (failure types) only for the very first subplot
-        if idx == 0:
-            n_xticks = len(pivot.columns)
-            ax.set_xticks(np.arange(n_xticks) + 0.5)
-            ax.set_xticklabels(
-                ["App\nCrash", "App\nHang", "Error\nExit", "SDC"] + ["Sum"] + [" "] * 5,
-                rotation=90,
-                fontsize=13
-            )
+        ax.set_xticks(np.arange(n_xticks) + 0.5)
+        ax.set_xticklabels(
+            ["App\nCrash", "App\nHang", "Error\nExit", "SDC"] + ["App\nCrash", "App\nHang", "Error\nExit", "SDC"],
+            rotation=90,
+            fontsize=13
+        )
 
-            # add "nonnegative" and "negative" as text labels above the corresponding groups
-            ax.text(int(n_xticks * 0.25) + 0.5, -3.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
-            ax.text(int(n_xticks * 0.75) + 0.5, -3.5, 'negative', ha='center', va='bottom', fontsize=13)
-        else:
-            ax.set_xticklabels(
-                ["App\nCrash", "App\nHang", "Error\nExit", "SDC"] + ["Sum"] + [" "] * 5,
-                rotation=90,
-                fontsize=13,
-                color='white'
-            )
-        if idx == n_auts - 1:
-            ax.text(9.9, -0.3, 'Percentages of\nSyscaLLM, Random (Log-Uniform)', ha='right', va='bottom', fontsize=13)
+        ax.add_patch(Rectangle((0, 0), 4, len(all_syscalls), fill=False, edgecolor='black', lw=1))
+        ax.add_patch(Rectangle((4, 0), 4, len(all_syscalls), fill=False, edgecolor='black', lw=1))
 
         # move primary xticks below the text labels
         ax.xaxis.set_label_position('top')
