@@ -1,6 +1,6 @@
-[submodule "llm-syscall"]
+[submodule "syscallm-generation"]
 	path = syscallm-generation
 	url = https://github.boschdevcloud.com/bios-SPARTA/llm-syscall.git
-[submodule "safety-fuzzing"]
+[submodule "syscallm-injection"]
 	path = syscallm-injection
 	url = https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing.git
