@@ -14,9 +14,9 @@ Manual Pages → LLM Generation → JSON Tests → Strace Commands → Configura
 
 SyscaLLM is structured around four main components, each aligned with key stages of this workflow:
 
-1. **LLM-based System Call Test Generation** (`llm-syscall/`): Covers the `Manual Pages → LLM Generation → JSON Tests` stages. This module uses LLMs to generate system call error injection tests based on Linux man pages. This is added as a subdirectory [llm-syscall](https://github.boschdevcloud.com/bios-SPARTA/llm-syscall/tree/main) and high-level overview is documented in [here](https://inside-docupedia.bosch.com/confluence2/display/ICT174/1.+LLM-Based+Error+Injection+Test+Generation).
-2. **Errorload Processing Pipeline** (`src/process-json/`): Implements the `JSON Tests → Strace Commands → Configurations` stages. It processes the LLM-generated JSON tests into executable error injection configurations that can be used in the fuzzing environment.
-3. **Safety Fuzzing Testbed** (`safety-fuzzing/`): Corresponds to the `Error Injection` stage. This Docker-based testbed simulates faulty Linux OS behavior by injecting system call errors. This is added as a subdirectory [safety-fuzzing](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/tree/main) and high-level overview is documented [here](https://inside-docupedia.bosch.com/confluence2/display/ICT174/2.+System+Call+Error+Injection).
+1. **LLM-based System Call Test Generation** (`syscallm-generation/`): Covers the `Manual Pages → LLM Generation → JSON Tests` stages. This module uses LLMs to generate system call error injection tests based on Linux man pages. This is added as a subdirectory [syscallm-generation](https://github.boschdevcloud.com/bios-SPARTA/syscallm-generation/tree/main) and high-level overview is documented in [here](https://inside-docupedia.bosch.com/confluence2/display/ICT174/1.+LLM-Based+Error+Injection+Test+Generation).
+2. **Errorload Processing Pipeline** (`src/process-json/`): Implements the `JSON Tests → Strace Commands → Configurations` stages. It processes the LLM-generated JSON tests into executable error injection configurations that can be used in the error injection environment.
+3. **Error Injection Testbed** (`syscallm-injection/`): Corresponds to the `Error Injection` stage. This Docker-based testbed simulates faulty Linux OS behavior by injecting system call errors. This is added as a subdirectory [syscallm-injection](https://github.boschdevcloud.com/bios-SPARTA/syscallm-injection/tree/main) and high-level overview is documented [here](https://inside-docupedia.bosch.com/confluence2/display/ICT174/2.+System+Call+Error+Injection).
 4. **Visualization of Experiment Results** (`src/plot/`): Supports the `Analysis` stage. This component provides scripts and tools to visualize and interpret application behavior in response to injected system call errors.
 
 ## Features
@@ -25,7 +25,7 @@ SyscaLLM is structured around four main components, each aligned with key stages
 - **Comprehensive Error Injection**: Supports both success return value and error code for system calls manipulation
 - **Real-world Application Testing**: Pre-configured support for Redis, memcached, Python, Nginx and other applications
 - **Configurable Error Distribution**: Supports uniform and logarithmic error distribution patterns
-- **Safety Fuzzing Environment**: Isolated Docker-based testing with system call monitoring
+- **Error Injection Environment**: Isolated Docker-based testing with system call monitoring
 - **Detailed Analysis Tools**: Visualization and analysis scripts for test results and coverage
 
 ## Installation
@@ -43,11 +43,11 @@ git submodule update --init --recursive
 
 ## Quick Start
 
-1. Install dependencies for `llm-syscall`
+1. Install dependencies for `syscallm-generation`
 ``` bash
-pip install -r llm-syscall/requirements.txt
+pip install -r syscallm-generation/requirements.txt
 ```
-2. [Set up the environment](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/wiki/Setup) for `safety-fuzzing`
+2. [Set up the environment](https://github.boschdevcloud.com/bios-SPARTA/syscallm-injection/wiki/Setup) for `syscallm-injection`
 3. One script for the whole workflow.
 ``` bash
 bash scripts/run.sh
@@ -61,11 +61,11 @@ SyscaLLM orchestrates a multi-stage workflow to test application robustness agai
 
 The LLM generates test cases based on the following components:
 
-- **Prompt** (`llm-syscall/src/prompt.py`): Guides the LLM to generate erroneous values for system call success return values and error codes. The current prompt is targeting **valid return value errors** (i.e., return values that fall within a valid range but are incrrect in context) and **invalid return value errors** (i.e., clearly invalid values, such as numbers that exceed the data type range or violate syscall specifications)
-- **Manual Pages** (`llm-syscall/scripts/extract_syscall_man_pages.sh`): Serves as prior knowledge for each system call and dynamically inserted into the prompt.
-- **JSON Schema** (`llm-syscall/src/output_json_schema.py`): Defines the expected structure of the LLM-generated test cases, which improves the quality of the output. See [JSON schema](https://github.boschdevcloud.com/bios-SPARTA/llm-syscall/blob/main/src/output_json_schema.py).
+- **Prompt** (`syscallm-generation/src/prompt.py`): Guides the LLM to generate erroneous values for system call success return values and error codes. The current prompt is targeting **valid return value errors** (i.e., return values that fall within a valid range but are incrrect in context) and **invalid return value errors** (i.e., clearly invalid values, such as numbers that exceed the data type range or violate syscall specifications)
+- **Manual Pages** (`syscallm-generation/scripts/extract_syscall_man_pages.sh`): Serves as prior knowledge for each system call and dynamically inserted into the prompt.
+- **JSON Schema** (`syscallm-generation/src/output_json_schema.py`): Defines the expected structure of the LLM-generated test cases, which improves the quality of the output. See [JSON schema](https://github.boschdevcloud.com/bios-SPARTA/syscallm-generation/blob/main/src/output_json_schema.py).
 
-To understand the details of LLM-based test generation, see [`llm-syscall/README.md`](https://github.boschdevcloud.com/bios-SPARTA/llm-syscall/tree/main) for information on:
+To understand the details of LLM-based test generation, see [`syscallm-generation/README.md`](https://github.boschdevcloud.com/bios-SPARTA/syscallm-generation/tree/main) for information on:
 
 - How to extract manual pages for each system call
 - Setting up `OPENAI_API_KEY` and configuring model parameters
@@ -107,7 +107,7 @@ This script will run `src/process_json/main.py` for the following steps:
 4. **Adding when parameter to the strace commands**
     - For system calls that are invoked multiple times, error values to inject are propagated across every invocation.
 5. **Convert strace command to error injection config files**
-    - Converts the strace command to the specific config file format that `safety-fuzzing` uses for error injection. 
+    - Converts the strace command to the specific config file format that `syscallm-injection` uses for error injection. 
 6. **Sampling**
     - There could be extensive amount of config files generated for one application-under-test. Therefore, we sample `1000` config files randomly for each run.
 7. **Generating random config files**
@@ -133,11 +133,11 @@ A sample of one config files related to the system call *accept4*, after the pip
 }
 ```
 
-### 3. Safety Fuzzing Testbed
+### 3. Error Injection Testbed
 
-First, make sure you have set up your test environment, specified in [Safety Fuzzing - Setup](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/wiki/Setup). For a quick start, follow [Safety Fuzzing - Quick Start](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/wiki/Usage#quick-start).
+First, make sure you have set up your test environment, specified in [Error Injection - Setup](https://github.boschdevcloud.com/bios-SPARTA/syscallm-injection/wiki/Setup). For a quick start, follow [Error Injection - Quick Start](https://github.boschdevcloud.com/bios-SPARTA/syscallm-injection/wiki/Usage#quick-start).
 
-A very detailed documentation is provided in [`safety-fuzzing/README.md`](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/tree/main) that includes:
+A very detailed documentation is provided in [`syscallm-injection/README.md`](https://github.boschdevcloud.com/bios-SPARTA/syscallm-injection/tree/main) that includes:
 
 - How to configure the experiment environment
 - How to test your own application
@@ -149,7 +149,7 @@ A very detailed documentation is provided in [`safety-fuzzing/README.md`](https:
 After running the experiments and extracting the results by:
 
 ```bash
-python3 ./safety-fuzzing/src/failure_analysis/main.py --output result.csv
+python3 ./syscallm-injection/src/failure_analysis/main.py --output result.csv
 ```
 
 You will gain a result.csv that looks something like this:
@@ -187,7 +187,7 @@ python3 src/plot/plot_failure.py
 ```
 
 ## Open Source Software
-This project relies on the usage of open-source Python libraries. Please see [`llm-syscall/README.md`](https://github.boschdevcloud.com/bios-SPARTA/llm-syscall/tree/main) and [`safety-fuzzing/README.md`](https://github.boschdevcloud.com/bios-SPARTA/safety-fuzzing/tree/main).
+This project relies on the usage of open-source Python libraries. Please see [`syscallm-generation/README.md`](https://github.boschdevcloud.com/bios-SPARTA/syscallm-generation/tree/main) and [`syscallm-injection/README.md`](https://github.boschdevcloud.com/bios-SPARTA/syscallm-injection/tree/main).
 
 ## Contact
 
