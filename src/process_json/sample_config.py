@@ -43,4 +43,4 @@ def process(directory):
                 for f in to_delete:
                     os.remove(f)
 
-                logger.debug(f"{len(selected)} files kept, {len(to_delete)} deleted in {run_dir}")
+                logger.debug(f"{len(selected)}/{len(all_files)} in {run_dir}")
