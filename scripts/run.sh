@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (c) 2025 Robert Bosch GmbH
+# SPDX-License-Identifier: AGPL-3.0
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKING_DIR="$(dirname "$SCRIPT_DIR")"
 

@@ -1,3 +1,6 @@
+# Copyright (c) 2025 Robert Bosch GmbH
+# SPDX-License-Identifier: AGPL-3.0
+
 import csv
 
 def extract_syscalls_from_csv():
