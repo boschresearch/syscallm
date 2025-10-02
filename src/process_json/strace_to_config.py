@@ -49,7 +49,7 @@ def process_strace_file(file_path):
         os.makedirs(output_file_path, exist_ok=True)
         output_file_path = os.path.join(output_file_path, f"{id}.json")
 
-        # generate JSON content for safety-fuzzing config
+        # generate JSON content for syscallm-injection config
         json_content = generate_json_content(id, strace_param)
 
         # write JSON content to file

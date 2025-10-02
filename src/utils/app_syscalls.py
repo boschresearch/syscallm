@@ -2,7 +2,7 @@ import csv
 
 def extract_syscalls_from_csv():
     # TODO: Better path handling
-    file_path = "/home/jom8be/workspace/syscallm/safety-fuzzing/examples/export/output.oracle.csv"
+    file_path = "/home/jom8be/workspace/syscallm/syscallm-injection/examples/export/output.oracle.csv"
     syscall_count = dict()
     
     with open(file_path, newline='') as csvfile:

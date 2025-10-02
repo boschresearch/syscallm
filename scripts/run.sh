@@ -13,26 +13,26 @@ if command -v nvidia-smi &> /dev/null; then
 fi
 
 # configure the environment variables
-source "$WORKING_DIR/safety-fuzzing/config/configure"
+source "$WORKING_DIR/syscallm-injection/config/configure"
 
 # process JSON files to strace command options
 bash "$WORKING_DIR/scripts/process_json.sh"
 
 # build the syscall monitor image
-bash "$WORKING_DIR/safety-fuzzing/scripts/build_monitor_image.sh"
+bash "$WORKING_DIR/syscallm-injection/scripts/build_monitor_image.sh"
 
 # build the wrapped application image
-bash "$WORKING_DIR/safety-fuzzing/scripts/build_test_image.sh"
+bash "$WORKING_DIR/syscallm-injection/scripts/build_test_image.sh"
 
 # overwrite environment variables for the testbed
 export CONFIG_DIR="$TESTBED_PATH/examples/config"
 
 # run error injection 
-bash "$WORKING_DIR/safety-fuzzing/scripts/run.sh"
+bash "$WORKING_DIR/syscallm-injection/scripts/run.sh"
 
 # overwrite environment variables for the testbed
 export CONFIG_DIR="$WORKING_DIR/data/config/success/gpt-4o/run1"
 
 # run error injection 
-bash "$WORKING_DIR/safety-fuzzing/scripts/run.sh"
+bash "$WORKING_DIR/syscallm-injection/scripts/run.sh"
 
