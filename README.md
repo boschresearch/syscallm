@@ -194,7 +194,5 @@ This project relies on the usage of open-source Python libraries. Please see [`s
 For any questions or issues, please contact [Min Hee Jo](mailto:MinHee.Jo@de.bosch.com).
 
 ## License
-License: BIOSL-v4
 
-Copyright (c) 2009, 2018 Robert Bosch GmbH and its subsidiaries. This program and the accompanying materials are made available under the terms of the Bosch Internal Open Source License v4 which accompanies this distribution, and is available at http://bios.intranet.bosch.com/bioslv4.txt
-
+PROJECT-NAME is open-sourced under the AGPL-3.0 license. See the LICENSE file for details.
