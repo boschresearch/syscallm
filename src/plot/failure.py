@@ -434,7 +434,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
         cax=cbar_ax,
         orientation='horizontal'
     )
-    cbar.set_label("SyscaLLM - Random (%)", fontsize=14)
+    cbar.set_label("- SyscaLLM + Random (%)", fontsize=14)
     cbar.ax.xaxis.set_ticks_position('bottom')
     cbar.ax.xaxis.set_label_position('bottom')
 
