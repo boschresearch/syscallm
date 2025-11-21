@@ -4,8 +4,6 @@
 import json
 import utils.config as config
 
-models = config.models
-
 def is_json(file_path):
     """Check if a file is a valid JSON file."""
     try:
