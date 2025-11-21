@@ -8,7 +8,7 @@ import filter_out_of_bound
 import inject_what
 import inject_when
 import strace_to_config
-# import sample_config
+import sample_config
 # import random_config
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -69,8 +69,8 @@ if __name__ == "__main__":
             logging.info("5. Convert strace commands to error injection config files...")
             strace_to_config.process(directory=strace_dir, aut=aut, mode=mode)
 
-            # logging.info("6. Sampling...")
-            # sample_config.process(directory=config_dir)
+            logging.info("6. Sampling...")
+            sample_config.process(directory=config_dir, aut=aut, mode=mode)
 
             # logging.info("7. Generating random config files...")
             # random_config.process(directory=config_dir, distribution="uniform")

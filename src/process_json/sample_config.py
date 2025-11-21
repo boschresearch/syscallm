@@ -10,7 +10,6 @@ import utils.config as config
 
 logger = logging.getLogger(__name__)
 
-mode = config.mode
 temperature = config.temperature
 models = config.models
 runs = config.runs
@@ -34,16 +33,15 @@ def sample_files(directory):
     return set(all_files), set(all_files)  # all files are selected
 
 
-def process(directory):
-    for temp in (f"temperature_{t}" for t in temperature):
-        for model in models:
-            for run in range(1, runs + 1):
-                run_dir = os.path.join(directory, temp, model, f"run{run}")
+def process(directory, aut, mode):
+    for model in models:
+        for run in range(1, runs + 1):
+            run_dir = os.path.join(directory, aut, mode, f"temperature_{temperature}", model, f"run{run}")
 
-                selected, all_files = sample_files(run_dir)
-                to_delete = all_files - selected
+            selected, all_files = sample_files(run_dir)
+            to_delete = all_files - selected
 
-                for f in to_delete:
-                    os.remove(f)
+            for f in to_delete:
+                os.remove(f)
 
-                logger.debug(f"{len(selected)}/{len(all_files)} in {run_dir}")
+            logger.debug(f"{len(selected)}/{len(all_files)} in {run_dir}")
