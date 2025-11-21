@@ -9,7 +9,7 @@ import inject_what
 import inject_when
 import strace_to_config
 import sample_config
-# import random_config
+import random_config
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
@@ -24,11 +24,12 @@ modes = config.modes
 auts = config.auts
 temperature = config.temperature
 data_dir = config.data_dir
+baseline = config.baseline
 json_dir = data_dir / "json"
 json_filtered_dir = data_dir / "json_filtered"
 strace_dir = data_dir / "strace"
 config_dir = data_dir / "config"
-config_random_dir = data_dir / f"config_random_{config.baseline}"
+config_random_dir = data_dir / f"config_random_{baseline}"
 
 
 if __name__ == "__main__":
@@ -72,6 +73,5 @@ if __name__ == "__main__":
             logging.info("6. Sampling...")
             sample_config.process(directory=config_dir, aut=aut, mode=mode)
 
-            # logging.info("7. Generating random config files...")
-            # random_config.process(directory=config_dir, distribution="uniform")
-            # random_config.process(directory=config_dir, distribution="log")
+            logging.info("7. Generating random config files...")
+            random_config.process(directory=config_dir, aut=aut, mode=mode, distribution=baseline)

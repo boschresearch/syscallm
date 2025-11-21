@@ -11,12 +11,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.app_syscalls as app_syscalls
 import utils.config as config
 
-mode = config.mode
 temperature = config.temperature
 models = config.models
 runs = config.runs
-aut = config.aut
-syscalls = app_syscalls.syscall_getters[aut]()
 
 cache_random_values = {}
 
@@ -31,7 +28,7 @@ def draw_log_uniform_including_zero(max_value, p_zero=0.005):
         return np.uint64(np.exp(log_sample))
 
 
-def get_random_number(distribution):
+def get_random_number(mode, distribution):
     """Generate a random unsigned integer."""
     if mode == "success":
         if distribution == "uniform":
@@ -45,11 +42,11 @@ def get_random_number(distribution):
             return draw_log_uniform_including_zero(max_value=4095, p_zero=0)
         
 
-def get_unique_random_numbers(distribution, count):
+def get_unique_random_numbers(mode, distribution, count):
     unique_values = set()
 
     while len(unique_values) < count:
-        val = get_random_number(distribution)
+        val = get_random_number(mode, distribution)
         unique_values.add(val)
 
     return list(unique_values)
@@ -59,7 +56,7 @@ def get_index(id_number, total_invocations):
     return (id_number - 1) % total_invocations
 
 
-def get_random_config(json_content):
+def get_random_config(json_content, mode, syscalls):
     global cache_random_values
 
     # get id from json content
@@ -93,7 +90,7 @@ def get_random_config(json_content):
     return json_content
 
 
-def process_json_file(file_path, distribution):
+def process_json_file(file_path, mode, distribution, syscalls):
     with open(file_path, 'r') as file:
         try:
             json_content = json.load(file)
@@ -106,18 +103,18 @@ def process_json_file(file_path, distribution):
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     # generate random JSON content
-    random_json_content = get_random_config(json_content)
+    random_json_content = get_random_config(json_content, mode, syscalls)
 
     # write random JSON content to file
     with open(output_file_path, 'w') as file:
         json.dump(random_json_content, file, indent=4)
 
 
-def prefill_cache_random_values(distribution):
+def prefill_cache_random_values(mode, distribution, syscalls):
     global cache_random_values
 
     for syscall, count in syscalls.items():
-        cache_random_values[syscall] = get_unique_random_numbers(distribution, count)
+        cache_random_values[syscall] = get_unique_random_numbers(mode, distribution, count)
 
 
 def extract_sort_keys(filename):
@@ -130,18 +127,19 @@ def extract_sort_keys(filename):
     return (syscall, int(num))
 
 
-def process(directory, distribution):
+def process(directory, aut, mode, distribution):
     global cache_random_values
 
-    for temp in (f"temperature_{t}" for t in temperature):
-        for model in models:
-            for run in range(1, runs + 1):
-                run_dir = os.path.join(directory, temp, model, f"run{run}")
+    syscalls = app_syscalls.syscall_getters[aut]()
 
-                cache_random_values = {}
-                prefill_cache_random_values(distribution)
+    for model in models:
+        for run in range(1, runs + 1):
+            run_dir = os.path.join(directory, aut, mode, f"temperature_{temperature}", model, f"run{run}")
 
-                for filename in sorted(os.listdir(run_dir), key=extract_sort_keys):
-                    file_path = os.path.join(run_dir, filename)
+            cache_random_values = {}
+            prefill_cache_random_values(mode, distribution, syscalls)
 
-                    process_json_file(file_path, distribution)
+            for filename in sorted(os.listdir(run_dir), key=extract_sort_keys):
+                file_path = os.path.join(run_dir, filename)
+
+                process_json_file(file_path, mode, distribution, syscalls)
