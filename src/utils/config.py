@@ -4,13 +4,13 @@
 from pathlib import Path
 
 runs = 5
-models = ["Qwen2.5-7B-Instruct", "Qwen2.5-32B-Instruct", "QwQ-32B-Preview", "gpt-4o"]
+models = ["gpt-4o"]
 temperature = "0.5"
 modes = ["success", "error_code"]
-auts = ["python", "redis", "nginx"]
-total_syscall_count = 345
+auts = ["python", "redis"]
 baseline = "log"
+total_syscall_count = 345
 
 # file paths
-ROOT_DIR = str(Path(__file__).resolve().parents[2])
-data_dir = f"{ROOT_DIR}/data"
+ROOT_DIR = Path(__file__).resolve().parents[2]
+data_dir = ROOT_DIR / "data"

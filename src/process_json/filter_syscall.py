@@ -9,11 +9,10 @@ import utils.app_syscalls as app_syscalls
 import utils.utils as utils
 import utils.config as config
 
-mode = config.mode
+
 temperature = config.temperature
 models = config.models
 runs = config.runs
-aut = config.aut
 
 
 def move_file(file_path):
@@ -23,7 +22,7 @@ def move_file(file_path):
     shutil.copy2(file_path, output_file_path)
 
 
-def filter_syscall(file_path):
+def filter_syscall(file_path, aut):
     # list of syscalls with its count
     syscalls = app_syscalls.syscall_getters[aut]()
     base_filename = os.path.splitext(os.path.basename(file_path))[0]
@@ -32,13 +31,12 @@ def filter_syscall(file_path):
         move_file(file_path)
 
 
-def process(directory):
-    for temp in (f"temperature_{t}" for t in temperature):
-        for model in models:
-            for run in range(1, runs + 1):
-                run_dir = os.path.join(directory, temp, model, f"run{run}")
+def process(directory, aut, mode):
+    for model in models:
+        for run in range(1, runs + 1):
+            run_dir = os.path.join(directory, mode, f"temperature_{temperature}", model, f"run{run}")
 
-                for filename in os.listdir(run_dir):
-                    file_path = os.path.join(run_dir, filename)
-                    if utils.is_json(file_path):
-                        filter_syscall(file_path)
+            for filename in os.listdir(run_dir):
+                file_path = os.path.join(run_dir, filename)
+                if utils.is_json(file_path):
+                    filter_syscall(file_path, aut)

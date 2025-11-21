@@ -3,13 +3,13 @@
 
 import os
 import logging
-import filter_out_of_bound
-import inject_what
 import filter_syscall
-import inject_when
-import strace_to_config
-import sample_config
-import random_config
+# import filter_out_of_bound
+# import inject_what
+# import inject_when
+# import strace_to_config
+# import sample_config
+# import random_config
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
@@ -20,55 +20,58 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-mode = config.mode
-aut = config.aut
+modes = config.modes
+auts = config.auts
+temperature = config.temperature
 data_dir = config.data_dir
-json_dir = data_dir + "/json"
-json_filtered_dir = data_dir + "/json_filtered"
-strace_dir = data_dir + "/strace"
-config_dir = data_dir + "/config"
-config_random_uniform_dir = data_dir + "/config_random_uniform"
-config_random_log_dir = data_dir + "/config_random_log"
+json_dir = data_dir / "json"
+json_filtered_dir = data_dir / "json_filtered"
+strace_dir = data_dir / "strace"
+config_dir = data_dir / "config"
+config_random_dir = data_dir / f"config_random_{config.baseline}"
 
 
 if __name__ == "__main__":
-    print(f" * Run in {mode} mode for {aut}? (y/n): ", end="")
+    print(f" * Preprocess JSON files for {auts}? (y/n): ", end="")
     user_input = input().strip().lower()
     if user_input != "y":
         print("Exiting...")
         sys.exit(0)
 
-    # directories to remove if they exist
-    dirs_to_remove = [
-        json_filtered_dir,
-        strace_dir,
-        config_dir,
-        config_random_uniform_dir,
-        config_random_log_dir,
-    ]
+    for aut in auts:
+        for mode in modes:
+            logging.info(f"=== Processing for AUT {aut} in {mode} mode ===")
 
-    for dir_path in dirs_to_remove:
-        if os.path.exists(dir_path):
-            os.system(f"rm -r {dir_path}")
+            # directories to remove if they exist
+            dirs_to_remove = [
+                json_filtered_dir / mode / f"temperature_{temperature}",
+                strace_dir / aut / mode / f"temperature_{temperature}",
+                config_dir / aut / mode / f"temperature_{temperature}",
+                config_random_dir / aut / mode / f"temperature_{temperature}",
+            ]
 
-    logging.info("1. Filtering System Calls...")
-    filter_syscall.process(directory=json_dir)
+            for dir_path in dirs_to_remove:
+                if os.path.exists(dir_path):
+                    os.system(f"rm -r {dir_path}")
 
-    logging.info("2. Filtering out of bound values from filtered JSON files...")
-    filter_out_of_bound.process(directory=json_filtered_dir)
+            logging.info("1. Filtering System Calls...")
+            filter_syscall.process(directory=json_dir, aut=aut, mode=mode)
 
-    logging.info("3. Converting JSON files to strace commands...")
-    inject_what.process(directory=json_filtered_dir)
+            # logging.info("2. Filtering out of bound values from filtered JSON files...")
+            # filter_out_of_bound.process(directory=json_filtered_dir)
 
-    logging.info("4. Adding when parameter to the strace commands...")
-    inject_when.process(directory=strace_dir)
+            # logging.info("3. Converting JSON files to strace commands...")
+            # inject_what.process(directory=json_filtered_dir)
 
-    logging.info("5. Convert strace commands to error injection config files...")
-    strace_to_config.process(directory=strace_dir)
+            # logging.info("4. Adding when parameter to the strace commands...")
+            # inject_when.process(directory=strace_dir)
 
-    logging.info("6. Sampling...")
-    sample_config.process(directory=config_dir)
+            # logging.info("5. Convert strace commands to error injection config files...")
+            # strace_to_config.process(directory=strace_dir)
 
-    logging.info("7. Generating random config files...")
-    random_config.process(directory=config_dir, distribution="uniform")
-    random_config.process(directory=config_dir, distribution="log")
+            # logging.info("6. Sampling...")
+            # sample_config.process(directory=config_dir)
+
+            # logging.info("7. Generating random config files...")
+            # random_config.process(directory=config_dir, distribution="uniform")
+            # random_config.process(directory=config_dir, distribution="log")
