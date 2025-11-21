@@ -6,7 +6,7 @@ import logging
 import filter_syscall
 import filter_out_of_bound
 import inject_what
-# import inject_when
+import inject_when
 # import strace_to_config
 # import sample_config
 # import random_config
@@ -63,8 +63,8 @@ if __name__ == "__main__":
             logging.info("3. Converting JSON files to strace commands...")
             inject_what.process(directory=json_filtered_dir, aut=aut, mode=mode)
 
-            # logging.info("4. Adding when parameter to the strace commands...")
-            # inject_when.process(directory=strace_dir)
+            logging.info("4. Adding when parameter to the strace commands...")
+            inject_when.process(directory=strace_dir, aut=aut, mode=mode)
 
             # logging.info("5. Convert strace commands to error injection config files...")
             # strace_to_config.process(directory=strace_dir)
