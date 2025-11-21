@@ -23,12 +23,12 @@ logging.basicConfig(
 mode = config.mode
 aut = config.aut
 data_dir = config.data_dir
-json_dir = config.json_dir
-json_filtered_dir = config.json_filtered_dir
-strace_dir = config.strace_dir
-config_dir = config.config_dir
-config_random_uniform_dir = config.config_random_uniform_dir
-config_random_log_dir = config.config_random_log_dir
+json_dir = data_dir + "/json"
+json_filtered_dir = data_dir + "/json_filtered"
+strace_dir = data_dir + "/strace"
+config_dir = data_dir + "/config"
+config_random_uniform_dir = data_dir + "/config_random_uniform"
+config_random_log_dir = data_dir + "/config_random_log"
 
 
 if __name__ == "__main__":
