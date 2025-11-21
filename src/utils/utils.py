@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 import json
-import utils.config as config
 
 def is_json(file_path):
     """Check if a file is a valid JSON file."""

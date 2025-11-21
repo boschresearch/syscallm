@@ -2,10 +2,14 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 import csv
+import utils.config as config
+
+
+ROOT_DIR = config.ROOT_DIR
+
 
 def extract_syscalls_from_csv():
-    # TODO: Better path handling
-    file_path = "/home/jom8be/workspace/syscallm/syscallm-injection/examples/export/output.oracle.csv"
+    file_path = f"{ROOT_DIR}/syscallm-injection/examples/export/output.oracle.csv"
     syscall_count = dict()
     
     with open(file_path, newline='') as csvfile:
