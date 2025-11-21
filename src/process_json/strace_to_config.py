@@ -7,11 +7,10 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.config as config
 
-mode = config.mode
+
 temperature = config.temperature
 models = config.models
 runs = config.runs
-aut = config.aut
 
 
 def generate_json_content(id, fault):
@@ -60,14 +59,13 @@ def process_strace_file(file_path):
             json.dump(json_content, json_file, indent=4)
 
 
-def process(directory):
-    for temp in (f"temperature_{t}" for t in temperature):
-        for model in models:
-            for run in range(1, runs + 1):
-                run_dir = os.path.join(directory, temp, model, f"run{run}")
+def process(directory, aut, mode):
+    for model in models:
+        for run in range(1, runs + 1):
+            run_dir = os.path.join(directory, aut, mode, f"temperature_{temperature}", model, f"run{run}")
 
-                for filename in os.listdir(run_dir):
-                    file_path = os.path.join(run_dir, filename)
+            for filename in os.listdir(run_dir):
+                file_path = os.path.join(run_dir, filename)
 
-                    if file_path.endswith(".txt"):
-                        process_strace_file(file_path)
+                if file_path.endswith(".txt"):
+                    process_strace_file(file_path)
