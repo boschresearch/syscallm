@@ -8,14 +8,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.utils as utils
 import utils.config as config
 
-mode = config.mode
 temperature = config.temperature
 models = config.models
 runs = config.runs
-aut = config.aut
 
 
-def json_to_strace(data, syscall_name):
+def json_to_strace(data, syscall_name, mode):
     if not isinstance(data, dict):
         return []
 
@@ -25,7 +23,7 @@ def json_to_strace(data, syscall_name):
         return [f"inject={syscall_name}:error={val}" for val in data['error_codes']]
 
 
-def process_json_file(file_path):
+def process_json_file(file_path, aut, mode):
     filename = os.path.splitext(os.path.basename(file_path))[0]
 
     with open(file_path, 'r') as file:
@@ -36,7 +34,7 @@ def process_json_file(file_path):
             return
         
         # convert JSON data to strace commands
-        strace_commands = json_to_strace(data, filename)
+        strace_commands = json_to_strace(data, filename, mode)
 
         # if no strace commands are generated, skip writing the file
         if not strace_commands:
@@ -52,15 +50,14 @@ def process_json_file(file_path):
             file.write(f"{line}\n")
 
 
-def process(directory):
-    for temp in (f"temperature_{t}" for t in temperature):
-        for model in models:
-            for run in range(1, runs + 1):
-                run_dir = os.path.join(directory, temp, model, f"run{run}")
+def process(directory, aut, mode):
+    for model in models:
+        for run in range(1, runs + 1):
+            run_dir = os.path.join(directory, mode, f"temperature_{temperature}", model, f"run{run}")
 
-                for filename in os.listdir(run_dir):
-                    file_path = os.path.join(run_dir, filename)
+            for filename in os.listdir(run_dir):
+                file_path = os.path.join(run_dir, filename)
 
-                    # only process valid JSON files
-                    if utils.is_json(file_path):
-                        process_json_file(file_path)
+                # only process valid JSON files
+                if utils.is_json(file_path):
+                    process_json_file(file_path, aut, mode)
