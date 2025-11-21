@@ -4,7 +4,7 @@
 import os
 import logging
 import filter_syscall
-# import filter_out_of_bound
+import filter_out_of_bound
 # import inject_what
 # import inject_when
 # import strace_to_config
@@ -57,8 +57,8 @@ if __name__ == "__main__":
             logging.info("1. Filtering System Calls...")
             filter_syscall.process(directory=json_dir, aut=aut, mode=mode)
 
-            # logging.info("2. Filtering out of bound values from filtered JSON files...")
-            # filter_out_of_bound.process(directory=json_filtered_dir)
+            logging.info("2. Filtering out of bound values from filtered JSON files...")
+            filter_out_of_bound.process(directory=json_filtered_dir, mode=mode)
 
             # logging.info("3. Converting JSON files to strace commands...")
             # inject_what.process(directory=json_filtered_dir)
