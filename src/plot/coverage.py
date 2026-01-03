@@ -23,7 +23,6 @@ runs = config.runs
 total_syscall_count = config.total_syscall_count
 modes = config.modes
 models = config.models
-temperature = config.temperature
 data_dir = config.data_dir
 
 
@@ -222,11 +221,9 @@ if __name__ == "__main__":
             'loop_count', 'enumeration_count', 'blocked_count'
         ])
 
-        temp_dir = os.path.join(data_dir, "json", mode, f"temperature_{temperature}")
-
         for model in models:
             for run in range(1, runs + 1):
-                json_dir = os.path.join(temp_dir, model, f'run{run}')
+                json_dir = os.path.join(data_dir, "json", mode, model, f'run{run}')
                 valid, valid_empty, valid_all_out_of_bound, valid_out_of_bound, invalid, invalid_loop, invalid_enumeration, invalid_blocked = categorize(json_dir, mode)
                 df_valid = pd.concat([df_valid, pd.DataFrame({
                     'mode': [mode],

@@ -22,7 +22,6 @@ logging.basicConfig(
 
 modes = config.modes
 auts = config.auts
-temperature = config.temperature
 data_dir = config.data_dir
 baseline = config.baseline
 json_dir = data_dir / "json"
@@ -45,10 +44,10 @@ if __name__ == "__main__":
 
             # directories to remove if they exist
             dirs_to_remove = [
-                json_filtered_dir / mode / f"temperature_{temperature}",
-                strace_dir / aut / mode / f"temperature_{temperature}",
-                config_dir / aut / mode / f"temperature_{temperature}",
-                config_random_dir / aut / mode / f"temperature_{temperature}",
+                json_filtered_dir / mode,
+                strace_dir / aut / mode, 
+                config_dir / aut / mode,
+                config_random_dir / aut / mode
             ]
 
             for dir_path in dirs_to_remove:

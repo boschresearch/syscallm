@@ -10,7 +10,6 @@ import utils.utils as utils
 import utils.config as config
 
 
-temperature = config.temperature
 models = config.models
 runs = config.runs
 
@@ -62,7 +61,7 @@ def process_json_file(file_path, mode):
 def process(directory, mode):
     for model in models:
         for run in range(1, runs + 1):
-            run_dir = os.path.join(directory, mode, f"temperature_{temperature}", model, f"run{run}")
+            run_dir = os.path.join(directory, mode, model, f"run{run}")
 
             for filename in os.listdir(run_dir):
                 file_path = os.path.join(run_dir, filename)

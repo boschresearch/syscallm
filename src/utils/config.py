@@ -4,10 +4,9 @@
 from pathlib import Path
 
 runs = 5
-models = ["gpt-4o"]
-temperature = "0.5"
+models = ["gpt-5"]
 modes = ["success", "error_code"]
-auts = ["python", "redis"]
+auts = ["python", "redis", "nginx"]
 baseline = "log"
 total_syscall_count = 345
 

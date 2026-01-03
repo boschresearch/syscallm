@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import utils.app_syscalls as app_syscalls
 import utils.config as config
 
-temperature = config.temperature
+
 models = config.models
 runs = config.runs
 
@@ -134,7 +134,7 @@ def process(directory, aut, mode, distribution):
 
     for model in models:
         for run in range(1, runs + 1):
-            run_dir = os.path.join(directory, aut, mode, f"temperature_{temperature}", model, f"run{run}")
+            run_dir = os.path.join(directory, aut, mode, model, f"run{run}")
 
             cache_random_values = {}
             prefill_cache_random_values(mode, distribution, syscalls)

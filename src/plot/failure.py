@@ -21,7 +21,6 @@ modes = config.modes
 auts = config.auts
 baseline = config.baseline
 data_dir = config.data_dir
-temperature = config.temperature
 
 plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
@@ -963,8 +962,8 @@ def main():
     for aut in auts:      
         for mode in modes:
             # path to the config files
-            llm_config = os.path.join(data_dir, "config", aut, mode, f"temperature_{temperature}", "gpt-4o")
-            random_config = os.path.join(data_dir, "config_random_log", aut, mode, f"temperature_{temperature}", "gpt-4o")
+            llm_config = os.path.join(data_dir, "config", aut, mode, "gpt-4o")
+            random_config = os.path.join(data_dir, "config_random_log", aut, mode, "gpt-4o")
 
             # result directory
             result_dir = os.path.join(data_dir, "result", aut, mode)
