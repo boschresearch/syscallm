@@ -74,3 +74,13 @@ if __name__ == "__main__":
 
             logging.info("7. Generating random config files...")
             random_config.process(directory=config_dir, aut=aut, mode=mode, distribution=baseline)
+
+    # directories to remove if they exist
+    dirs_to_remove = [
+        json_filtered_dir,
+        strace_dir, 
+    ]
+
+    for dir_path in dirs_to_remove:
+        if os.path.exists(dir_path):
+            os.system(f"rm -r {dir_path}")
