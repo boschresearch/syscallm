@@ -18,12 +18,6 @@ def generate_json_content(id, fault):
         "syslog_monitor_config": {
             "id": id,
             "strace_output": "/export/strace.output.{id}",
-            "output": [
-                {
-                    "format": "csv",
-                    "target": "/export/output.{id}.csv"
-                }
-            ],
             "faults": [fault]
         }
     }
