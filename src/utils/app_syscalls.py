@@ -1,30 +1,27 @@
 # Copyright (c) 2025 Robert Bosch GmbH
 # SPDX-License-Identifier: AGPL-3.0
 
-import csv
-import utils.config as config
+from pathlib import Path
 
 
-ROOT_DIR = config.ROOT_DIR
+def extract_syscalls_from_statistics(aut: str):
+    root_dir = Path(__file__).resolve().parents[2]
+    file_path = f"{root_dir}/syscallm-injection/examples/statistics/{aut}.oracle"
+
+    with open(file_path, 'r') as f:
+        next(f)
+        next(f)
+        for line in f:
+            parts = line.strip().split()
+            syscall = parts[-1]
+            count = parts[3]
+
+            if '-' in syscall:
+                break
+            yield syscall, int(count)
 
 
-def extract_syscalls_from_csv():
-    file_path = f"{ROOT_DIR}/syscallm-injection/examples/export/output.oracle.csv"
-    syscall_count = dict()
-    
-    with open(file_path, newline='') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            if reader.line_num == 1:
-                header = row
-                column_index = header.index("syscall")
-            else:
-                syscall = row[column_index]
-                syscall_count[syscall] = syscall_count.get(syscall, 0) + 1
-
-    return dict(sorted(syscall_count.items()))
-
-
+# TODO: Update
 def get_memcached_syscalls():
     return {
         "accept4": 1,
@@ -318,7 +315,9 @@ syscall_getters = {
 }
 
 if __name__ == "__main__":
-    syscall_count = extract_syscalls_from_csv()
-    
-    for syscall, count in syscall_count.items():
-        print(f"\"{syscall}\": {count},")
+    aut = input("Enter application name (redis/python/memcached/nginx): ")
+
+    syscall_count = extract_syscalls_from_statistics(aut)
+
+    for syscall, count in syscall_count:
+        print(f'"{syscall}": {count},')
