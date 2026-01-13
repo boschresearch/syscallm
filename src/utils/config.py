@@ -9,6 +9,7 @@ modes = ["success", "error_code"]
 auts = ["python", "redis", "nginx"]
 baseline = "log"
 total_syscall_count = 345
+sample_size = 1500
 
 # file paths
 ROOT_DIR = Path(__file__).resolve().parents[2]

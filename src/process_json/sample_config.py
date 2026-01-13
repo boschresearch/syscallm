@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 models = config.models
 runs = config.runs
+sample_size = config.sample_size
 
-sample_size = 1000
 random.seed(42)
 
 def collect_all_json_files(directory):
