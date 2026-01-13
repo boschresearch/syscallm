@@ -318,6 +318,7 @@ if __name__ == "__main__":
     aut = input("Enter application name (redis/python/memcached/nginx): ")
 
     syscall_count = extract_syscalls_from_statistics(aut)
+    syscall_count = sorted(syscall_count, key=lambda x: x[0])
 
     for syscall, count in syscall_count:
         print(f'"{syscall}": {count},')
