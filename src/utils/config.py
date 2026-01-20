@@ -4,12 +4,12 @@
 from pathlib import Path
 
 runs = 5
-models = ["gpt-5"]
+models = ["gpt-4o"]
 modes = ["success", "error_code"]
 auts = ["python", "redis", "nginx"]
 baseline = "log"
 total_syscall_count = 345
-pre_sample_size = 800
+pre_sample_size = 760
 sample_size = 500
 
 # file paths
