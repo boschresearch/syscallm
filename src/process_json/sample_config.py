@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 models = config.models
 runs = config.runs
-sample_size = config.sample_size
+pre_sample_size = config.pre_sample_size
 
 random.seed(42)
 
@@ -28,8 +28,8 @@ def collect_all_json_files(directory):
 def sample_files(directory):
     all_files = collect_all_json_files(directory)
 
-    if len(all_files) > sample_size:
-        return set(random.sample(all_files, sample_size)), set(all_files)
+    if len(all_files) > pre_sample_size:
+        return set(random.sample(all_files, pre_sample_size)), set(all_files)
     return set(all_files), set(all_files)  # all files are selected
 
 
