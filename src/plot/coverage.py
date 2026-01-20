@@ -142,7 +142,7 @@ def get_error_codes(string: str):
 
     if not match:
         print("No error_codes found")
-        codes = []
+        return []
 
     values_str = match.group(1)
 
@@ -208,6 +208,8 @@ def update_hallucinatory_error_codes(model, llm_generated_values):
     hallucinatory_error_codes[model] = list(counters.items())
 
 if __name__ == "__main__":
+    os.makedirs("figures", exist_ok=True)
+
     fig, axs = plt.subplots(nrows=2, figsize=(6, 3), sharex=True)
     hallucinatory_error_codes = {model: [] for model in models}
 
