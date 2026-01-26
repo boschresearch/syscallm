@@ -1,12 +1,16 @@
 # Copyright (c) 2025 Robert Bosch GmbH
 # SPDX-License-Identifier: AGPL-3.0
 
+import re
 from pathlib import Path
+from collections import defaultdict
+
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
 
 
 def extract_syscalls_from_statistics(aut: str):
-    root_dir = Path(__file__).resolve().parents[2]
-    file_path = f"{root_dir}/syscallm-injection/examples/statistics/{aut}.oracle"
+    file_path = f"{ROOT_DIR}/syscallm-injection/examples/statistics/{aut}.oracle"
 
     with open(file_path, 'r') as f:
         next(f)
@@ -19,6 +23,66 @@ def extract_syscalls_from_statistics(aut: str):
             if '-' in syscall:
                 break
             yield syscall, int(count)
+
+
+def count_syscalls_from_strace(strace_file: str) -> dict:
+    syscall_counts = defaultdict(int)
+    pending_syscalls = {}  # Track unfinished syscalls: {(tid, syscall_name): count}
+    
+    try:
+        with open(strace_file, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Extract TID from the beginning of the line
+                tid_match = re.match(r'^(\d+)\s+', line)
+                if not tid_match:
+                    continue
+                
+                tid = int(tid_match.group(1))
+                
+                # Check if it's an unfinished syscall
+                if '<unfinished ...>' in line:
+                    syscall_match = re.search(r'(\w+)\s*\(', line)
+                    if syscall_match:
+                        syscall_name = syscall_match.group(1)
+                        key = (tid, syscall_name)
+                        pending_syscalls[key] = pending_syscalls.get(key, 0) + 1
+                
+                # Check if it's a resumed syscall
+                elif '<... ' in line and 'resumed>' in line:
+                    resumed_match = re.search(r'<\.\.\. (\w+) resumed>', line)
+                    if resumed_match:
+                        syscall_name = resumed_match.group(1)
+                        key = (tid, syscall_name)
+                        
+                        # Match with pending unfinished syscall
+                        if key in pending_syscalls and pending_syscalls[key] > 0:
+                            pending_syscalls[key] -= 1
+                        
+                        # Count as a completed invocation
+                        syscall_counts[syscall_name] += 1
+                
+                # Normal syscall (completed in one line)
+                else:
+                    syscall_match = re.search(r'(\w+)\s*\(', line)
+                    if syscall_match:
+                        syscall_name = syscall_match.group(1)
+                        syscall_counts[syscall_name] += 1
+        
+        # Account for any unfinished syscalls that were never resumed
+        for (tid, syscall_name), count in pending_syscalls.items():
+            if count > 0:
+                syscall_counts[syscall_name] += count
+        
+        return dict(syscall_counts)
+    
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Strace output file not found: {strace_file}")
+    except Exception as e:
+        raise Exception(f"Error processing strace file: {e}")
 
 
 # TODO: Update
@@ -236,8 +300,16 @@ syscall_getters = {
 if __name__ == "__main__":
     aut = input("Enter application name (redis/python/memcached/nginx): ")
 
-    syscall_count = extract_syscalls_from_statistics(aut)
-    syscall_count = sorted(syscall_count, key=lambda x: x[0])
+    if aut == "nginx":
+        syscall_count = count_syscalls_from_strace(f"{ROOT_DIR}/syscallm-injection/examples/statistics/{aut}.oracle")
 
-    for syscall, count in syscall_count:
-        print(f'"{syscall}": {count},')
+        for syscall, count in syscall_count.items():
+            print(f'"{syscall}": {count},')
+    else:
+        syscall_count = extract_syscalls_from_statistics(aut)
+        syscall_count = sorted(syscall_count, key=lambda x: x[0])
+        
+        for syscall, count in syscall_count:
+            print(f'"{syscall}": {count},')
+
+    
