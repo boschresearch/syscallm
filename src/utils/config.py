@@ -9,8 +9,8 @@ modes = ["success", "error_code"]
 auts = ["python", "redis", "nginx"]
 baseline = "log"
 total_syscall_count = 345
-pre_sample_size = 760
-sample_size = 500
+pre_sample_size = 1500
+sample_size = 1000
 
 # file paths
 ROOT_DIR = Path(__file__).resolve().parents[2]
