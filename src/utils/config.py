@@ -4,7 +4,7 @@
 from pathlib import Path
 
 runs = 5
-models = ["gpt-4o"]
+models = ["gpt-4o", "gpt-5.2"]
 modes = ["success", "error_code"]
 auts = ["python", "redis", "nginx"]
 baseline = "log"
