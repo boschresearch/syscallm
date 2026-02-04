@@ -78,6 +78,11 @@ def process(directory, aut, mode):
         N_min, N_max, n_with_buffer, n = get_sample_size(counts)
         logger.info(f"Model: {model} | Runs: {runs} | Min files: {N_min} | Max files: {N_max} | Sample size with 20% buffer: {n_with_buffer} | Sample size: {n}")
 
+        # write original sample size to a file
+        sample_size_file = os.path.join(directory, aut, mode, model, "sample_size.txt")
+        with open(sample_size_file, "w") as f:
+            f.write(f"{n}\n")
+
         for run in range(1, runs + 1):
             run_dir = os.path.join(directory, aut, mode, model, f"run{run}")
 
