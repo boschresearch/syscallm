@@ -22,6 +22,7 @@ logging.basicConfig(
 
 modes = config.modes
 auts = config.auts
+models = config.models
 data_dir = config.data_dir
 baseline = config.baseline
 json_dir = data_dir / "json"
@@ -42,17 +43,19 @@ if __name__ == "__main__":
         for mode in modes:
             logging.info(f"=== Processing for AUT {aut} in {mode} mode ===")
 
-            # directories to remove if they exist
-            dirs_to_remove = [
-                json_filtered_dir / mode,
-                strace_dir / aut / mode, 
-                config_dir / aut / mode,
-                config_random_dir / aut / mode
-            ]
+            for model in models:
 
-            for dir_path in dirs_to_remove:
-                if os.path.exists(dir_path):
-                    os.system(f"rm -r {dir_path}")
+                # directories to remove if they exist
+                dirs_to_remove = [
+                    json_filtered_dir / mode,
+                    strace_dir / aut / mode, 
+                    config_dir / aut / mode,
+                    config_random_dir / aut / mode
+                ]
+    
+                for dir_path in dirs_to_remove:
+                    if os.path.exists(dir_path):
+                        os.system(f"rm -r {dir_path}")
 
             logging.info("1. Filtering System Calls...")
             filter_syscall.process(directory=json_dir, aut=aut, mode=mode)
