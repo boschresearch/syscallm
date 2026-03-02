@@ -19,6 +19,7 @@ import utils.app_syscalls as app_syscalls
 runs = config.runs
 modes = config.modes
 auts = config.auts
+model = "gpt-5.2"
 baseline = config.baseline
 data_dir = config.data_dir
 
@@ -63,7 +64,7 @@ def print_statistics(llm, random):
     llm_counts, random_counts = calculate_statistics(llm, random)
         
     print(f"---------------------------------------------------------------")
-    print(f"SyscaLLM (GPT-4o)")
+    print(f"SyscaLLM ({model}))")
     print("Counts:")
     print(llm_counts)
     print("Average Counts:")
@@ -128,7 +129,7 @@ def plot_outcome(llm, random):
     llm_counts, random_counts = calculate_statistics(llm, random)
 
     # add column
-    llm_counts['type'] = 'SyscaLLM (GPT-4o)'
+    llm_counts['type'] = f'SyscaLLM ({model})'
     random_counts['type'] = 'Random (Log)'
     
     # combine
@@ -167,7 +168,7 @@ def plot_outcome(llm, random):
             markers=True,
             linewidth=2,
             palette={
-                'SyscaLLM (GPT-4o)': '#6A5ACD',
+                f'SyscaLLM ({model})': '#6A5ACD',
                 'Random (Log)': '#FF8C00'
             }
         )
@@ -200,7 +201,7 @@ def plot_outcome_per_syscall(llm, random):
 
         return agg[['aut', 'mode', 'syscall', 'type', 'failures']]
     
-    llm_agg = aggregate_and_compute_failures(llm, 'SyscaLLM (GPT-4o)')
+    llm_agg = aggregate_and_compute_failures(llm, f'SyscaLLM ({model})')
     rnd_agg = aggregate_and_compute_failures(random, 'Random (Log)')
 
     # combine
@@ -236,7 +237,7 @@ def plot_outcome_per_syscall(llm, random):
             height=10,
             aspect=0.6,
             palette={
-                'SyscaLLM (GPT-4o)': '#6A5ACD',
+                f'SyscaLLM ({model})': '#6A5ACD',
                 'Random (Log)': '#FF8C00'
             }
         )
@@ -301,7 +302,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
     # get the complete list of syscalls across all auts
     all_syscalls = sorted(set(llm['syscall'].unique()).union(set(random['syscall'].unique())))
 
-    llm_agg = aggregate_and_compute_outcomes(llm, 'SyscaLLM (GPT-4o)', all_syscalls)
+    llm_agg = aggregate_and_compute_outcomes(llm, f'SyscaLLM ({model})', all_syscalls)
     rnd_agg = aggregate_and_compute_outcomes(random, 'Random (Log)', all_syscalls)
 
     # combine
@@ -311,7 +312,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
     diffs = []
     for aut in all_agg['aut'].unique():
         for mode in all_agg['mode'].unique():
-            llm_subset = all_agg[(all_agg['aut'] == aut) & (all_agg['mode'] == mode) & (all_agg['type'] == 'SyscaLLM (GPT-4o)')]
+            llm_subset = all_agg[(all_agg['aut'] == aut) & (all_agg['mode'] == mode) & (all_agg['type'] == f'SyscaLLM ({model})')]
             rnd_subset = all_agg[(all_agg['aut'] == aut) & (all_agg['mode'] == mode) & (all_agg['type'] == 'Random (Log)')]
             merged = pd.merge(llm_subset, rnd_subset, on='syscall', suffixes=('_llm', '_rnd'), how='outer')
 
@@ -456,7 +457,7 @@ def plot_failure_per_syscall(llm, random):
             df = pd.DataFrame()
 
             # aggregate data
-            df1 = aggregate_data(llm[(llm['aut'] == aut) & (llm['mode'] == mode)], 'SyscaLLM (GPT-4o)')
+            df1 = aggregate_data(llm[(llm['aut'] == aut) & (llm['mode'] == mode)], f'SyscaLLM ({model})')
             df2 = aggregate_data(random[(random['aut'] == aut) & (random['mode'] == mode)], 'Random (Log)')
             df = pd.concat([df1, df2], ignore_index=True)
 
@@ -515,7 +516,7 @@ def plot_silent_data_corruption_by_syscall(llm, random):
             df = pd.DataFrame({
                 'syscall': pd.concat([llm_counts, random_counts]).index,
                 'count': pd.concat([llm_counts, random_counts]).values,
-                'type': ['Random (Log)'] * len(random_counts) + ['SyscaLLM (GPT-4o)'] * len(llm_counts)
+                'type': ['Random (Log)'] * len(random_counts) + [f'SyscaLLM ({model})'] * len(llm_counts)
             })
             
             df['count'] = df['count'].fillna(0).astype(int)
@@ -530,7 +531,7 @@ def plot_silent_data_corruption_by_syscall(llm, random):
                 x='syscall',
                 y='count',
                 hue='type',
-                palette={'SyscaLLM (GPT-4o)': '#6A5ACD', 'Random (Log)': '#FF8C00'}
+                palette={f'SyscaLLM ({model})': '#6A5ACD', 'Random (Log)': '#FF8C00'}
             )
 
             plt.xlabel(None)
@@ -636,7 +637,7 @@ def process_dataset(data, mode, config_base, result_types):
 
 def plot_error_instances_when(aut, mode, llm_config, random_config, llm, random):
     datasets = [
-        ('SyscaLLM (GPT-4o)', llm, llm_config),
+        (f'SyscaLLM ({model})', llm, llm_config),
         ('Random (Log)', random, random_config)
     ]
 
@@ -725,7 +726,7 @@ def plot_error_instances_when(aut, mode, llm_config, random_config, llm, random)
 
 def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
     datasets = [
-        ('SyscaLLM (GPT-4o)', llm, llm_config),
+        (f'SyscaLLM ({model})', llm, llm_config),
         ('Random (Log)', random, random_config)
     ]
 
@@ -796,7 +797,7 @@ def plot_error_instances(aut, mode, llm_config, random_config, llm, random):
 
 def plot_error_instances_failure(aut, mode, llm_config, random_config, llm, random):
     datasets = [
-        ('SyscaLLM (GPT-4o)', llm, llm_config),
+        (f'SyscaLLM ({model})', llm, llm_config),
         ('Random (Log-Uniform)', random, random_config)
     ]
 
@@ -831,7 +832,7 @@ def plot_error_instances_failure(aut, mode, llm_config, random_config, llm, rand
 
     fig, ax = plt.subplots(figsize=(6, 8))
     color_map = {
-        'SyscaLLM (GPT-4o)': '#1F77B4',  # blue
+        f'SyscaLLM ({model})': '#1F77B4',  # blue
         'Random (Log-Uniform)': '#D62728',  # red
         'Random (Log)': '#D62728',  # red (for consistency if label is 'Random (Log)')
     }
@@ -962,11 +963,11 @@ def main():
     for aut in auts:      
         for mode in modes:
             # path to the config files
-            llm_config = os.path.join(data_dir, "config", aut, mode, "gpt-4o")
-            random_config = os.path.join(data_dir, "config_random_log", aut, mode, "gpt-4o")
+            llm_config = os.path.join(data_dir, "config", aut, mode, model)
+            random_config = os.path.join(data_dir, "config_random_log", aut, mode, model)
 
             # result directory
-            result_dir = os.path.join(data_dir, "result", aut, mode)
+            result_dir = os.path.join(data_dir, "result", aut, mode, model)
 
             for r in range(1, runs + 1):
                 # file paths
@@ -1008,7 +1009,7 @@ def main():
     # # plot test case distribution for each aut and mode
     # plot_test_case_distribution(all_llm_data)
 
-    # # plot outcome rates for SyscaLLM (GPT-4o) and Random
+    # # plot outcome rates for SyscaLLM and Random
     # plot_outcome(all_llm_data, all_random_data)
             
     # # plot failure types by syscall
