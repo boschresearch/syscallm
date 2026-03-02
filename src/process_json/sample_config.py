@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 models = config.models
 runs = config.runs
+buffer = 10
 
 random.seed(42)
 
@@ -42,8 +43,8 @@ def get_sample_size(counts: List[int], error_margin: float = 0.03):
     # never sample more than available
     n = min(n, N_min)  
 
-    # add 20% buffer
-    n_with_buffer = int(n * 1.2)  
+    # add buffer
+    n_with_buffer = int(n * (1 + buffer))  
     # never sample more than available
     n_with_buffer = min(n_with_buffer, N_min)  
 
@@ -76,7 +77,7 @@ def process(directory, aut, mode):
             counts.append(len(all_files))
 
         N_min, N_max, n_with_buffer, n = get_sample_size(counts)
-        logger.info(f"Model: {model} | Runs: {runs} | Min files: {N_min} | Max files: {N_max} | Sample size with 20% buffer: {n_with_buffer} | Sample size: {n}")
+        logger.info(f"Model: {model} | Runs: {runs} | Min files: {N_min} | Max files: {N_max} | Sample size with {buffer * 100}% buffer: {n_with_buffer} | Sample size: {n}")
 
         # write original sample size to a file
         sample_size_file = os.path.join(directory, aut, mode, model, "sample_size.txt")
