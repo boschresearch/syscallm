@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import Rectangle
+from matplotlib.gridspec import GridSpec
 from itertools import chain
 import seaborn as sns
 import numpy as np
@@ -49,11 +50,11 @@ def calculate_failure(data):
 def calculate_statistics(llm, random):
     # calculate failure counts and percentages grouped by "run"
     llm_counts = llm.groupby(['aut', 'mode', 'run'], group_keys=False).apply(
-        lambda group: calculate_failure(group)[0],
+        lambda group: calculate_failure(group)[1],
         include_groups=False
     )
     random_counts = random.groupby(['aut', 'mode', 'run'], group_keys=False).apply(
-        lambda group: calculate_failure(group)[0],
+        lambda group: calculate_failure(group)[1],
         include_groups=False
     )
     return llm_counts, random_counts
@@ -336,12 +337,14 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
 
     diff_df = pd.concat(diffs, ignore_index=True)
 
+    # calculate syscall counts per AUT and mode from combined llm and random data
+    combined_data = pd.concat([llm, random], ignore_index=True)
+    syscall_counts = combined_data.groupby(['aut', 'mode', 'syscall']).size().reset_index(name='count')
+
     n_auts = len(auts)
 
-    fig, axs = plt.subplots(1, n_auts, figsize=(2.5 * len(diff_df['mode'].unique()) * n_auts, 18), sharey=True)
-
-    if n_auts == 1:
-        axs = [axs]  # ensure axs is iterable
+    fig = plt.figure(figsize=(2.5 * len(diff_df['mode'].unique()) * n_auts + 1.2, 18))
+    gs = GridSpec(1, n_auts + 1, figure=fig, width_ratios=[0.08] + [1] * n_auts, wspace=0.0)
 
     vmin, vmax = -100, 100
     cmap = "RdBu_r"
@@ -351,31 +354,40 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
 
     for idx, aut in enumerate(auts):
         aut_df = diff_df[diff_df['aut'] == aut]
-        # create a multi-index columns: (mode, failure)
+        mode_order = sorted(aut_df['mode'].unique(), reverse=True)
+
         columns = []
-        for mode in aut_df['mode'].unique():
+        for mode in mode_order:
+            columns.append((mode, 'count'))
             for failure in failure_types:
                 columns.append((mode, failure))
 
-        # build pivot table for heatmap values and for annotations
         pivot_data = {}
         annot_data = {}
+        aut_counts = syscall_counts[syscall_counts['aut'] == aut]
+
         for syscall in all_syscalls:
             row = []
             annot_row = []
-            for mode in aut_df['mode'].unique():
-                mode_df = aut_df[(aut_df['mode'] == mode) & (aut_df['syscall'] == syscall)]
 
+            for mode in mode_order:
+                count_row = aut_counts[(aut_counts['mode'] == mode) & (aut_counts['syscall'] == syscall)]
+                count_val = 0 if count_row.empty else count_row['count'].values[0]
+
+                row.append(count_val)
+                annot_row.append(str(int(count_val)))
+
+                mode_df = aut_df[(aut_df['mode'] == mode) & (aut_df['syscall'] == syscall)]
                 if mode_df.empty:
-                    row.extend([0] * (len(failure_types) + 1))
-                    annot_row.extend([''] * (len(failure_types) + 1))
+                    row.extend([0] * len(failure_types))
+                    annot_row.extend([''] * len(failure_types))
                 else:
                     for failure in failure_types:
-                        val_rnd = mode_df[f'{failure}_rnd'].values[0] 
-                        val_llm = mode_df[f'{failure}_llm'].values[0] 
-                        diff_val = val_llm - val_rnd
-                        row.append(diff_val)
+                        val_rnd = mode_df[f'{failure}_rnd'].values[0]
+                        val_llm = mode_df[f'{failure}_llm'].values[0]
+                        row.append(val_llm - val_rnd)
                         annot_row.append(f"{val_rnd:.0f};{val_llm:.0f}")
+
             pivot_data[syscall] = row
             annot_data[syscall] = annot_row
 
@@ -384,7 +396,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
         pivot = pivot.sort_index()
         annot = annot.loc[pivot.index]
 
-        ax = axs[idx]
+        ax = fig.add_subplot(gs[idx + 1])
         sns.heatmap(
             pivot,
             cmap=cmap,
@@ -396,36 +408,61 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
             annot=annot if text else None,
             fmt="",
             cbar=False,
-            annot_kws={"fontsize": 12},
-            ax=ax
+            annot_kws={"fontsize": 10},
+            ax=ax,
+            yticklabels=False
         )
-        
+
+        n_rows = len(pivot.index)
+        count_col_idxs = [i for i, col in enumerate(pivot.columns) if col[1] == 'count']
+        for col_idx in count_col_idxs:
+            for row_idx in range(n_rows):
+                ax.add_patch(
+                    Rectangle(
+                        (col_idx, row_idx),
+                        1,
+                        1,
+                        facecolor='#F0F8F0',
+                        edgecolor='lightgrey',
+                        lw=0.5,
+                        zorder=3
+                    )
+                )
+                if text:
+                    ax.text(
+                        col_idx + 0.5,
+                        row_idx + 0.5,
+                        annot.iloc[row_idx, col_idx],
+                        ha='center',
+                        va='center',
+                        fontsize=10,
+                        zorder=4
+                    )
+
         n_xticks = len(pivot.columns)
-        
-        # add "nonnegative" and "negative" as text labels above the corresponding groups
         ax.text(int(n_xticks * 0.25), -3.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
         ax.text(int(n_xticks * 0.75), -3.5, 'negative', ha='center', va='bottom', fontsize=13)
-        
-        # primary x ticks (failure types) only for the very first subplot
+
         ax.set_xticks(np.arange(n_xticks) + 0.5)
-        ax.set_xticklabels(
-            ["App\nCrash", "App\nHang", "Error\nExit", "SDC"] + ["App\nCrash", "App\nHang", "Error\nExit", "SDC"],
-            rotation=90,
-            fontsize=13
-        )
+        xlabels = []
+        for mode in mode_order:
+            xlabels.append('Count')
+            xlabels.extend(["App\nCrash", "App\nHang", "Error\nExit", "SDC"])
+        ax.set_xticklabels(xlabels, rotation=90, fontsize=12)
 
-        ax.add_patch(Rectangle((0, 0), 4, len(all_syscalls), fill=False, edgecolor='black', lw=1))
-        ax.add_patch(Rectangle((4, 0), 4, len(all_syscalls), fill=False, edgecolor='black', lw=1))
-
-        # move primary xticks below the text labels
         ax.xaxis.set_label_position('top')
         ax.xaxis.set_ticks_position('top')
 
-        ax.set_yticklabels(ax.get_yticklabels(), fontsize=13, va='center', rotation=0)
-        ax.set_yticks(ticks=range(len(pivot.index)))
-        ax.set_yticklabels(pivot.index)
-        ax.set_xlabel(None)
-        ax.set_ylabel(None)
+        if idx == 0:
+            # first subplot → show y-ticks
+            ax.set_yticks(np.arange(len(pivot.index)))
+            ax.set_yticklabels(pivot.index, fontsize=13)
+            ax.tick_params(axis='y', left=True, labelleft=True)
+        else:
+            # all other subplots → hide y-ticks
+            ax.set_yticks([])
+            ax.set_yticklabels([])
+            ax.tick_params(axis='y', left=False, labelleft=False)
         ax.set_title(f"{aut.capitalize()}", fontsize=16, fontweight='bold', pad=20)
  
     cbar_ax = fig.add_axes([0.1, 0.025, 0.89, 0.01])
@@ -438,7 +475,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
     cbar.ax.xaxis.set_ticks_position('bottom')
     cbar.ax.xaxis.set_label_position('bottom')
 
-    plt.subplots_adjust(left=0.09, right=1, top=0.94, bottom=0.04, wspace=0)
+    plt.subplots_adjust(left=0.07, right=1, top=0.94, bottom=0.04, wspace=0)
     plt.savefig("figures/failure_heatmap.png", dpi=300)
     plt.close()
 
@@ -1009,7 +1046,7 @@ def main():
     # # plot test case distribution for each aut and mode
     # plot_test_case_distribution(all_llm_data)
 
-    # # plot outcome rates for SyscaLLM and Random
+    # plot outcome rates for SyscaLLM and Random
     # plot_outcome(all_llm_data, all_random_data)
             
     # # plot failure types by syscall
@@ -1025,7 +1062,7 @@ def main():
     # plot_silent_data_corruption_by_syscall(all_llm_data, all_random_data)
 
     # plot cumulative
-    plot_cumulative(all_llm_data, all_random_data)
+    # plot_cumulative(all_llm_data, all_random_data)
 
 
 if __name__ == "__main__":
