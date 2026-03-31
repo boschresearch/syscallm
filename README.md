@@ -46,9 +46,35 @@ git submodule update --init --recursive
 pip install -r syscallm-generation/requirements.txt
 ```
 2. [Set up the environment](https://github.com/boschresearch/syscallm-injection/wiki/2.-Setup) for `syscallm-injection`
-3. One script for the whole workflow.
+3. Extract Linux manual pages
 ``` bash
-bash scripts/run.sh
+cd ./syscallm-generation
+bash ./scripts/extract_syscall_man_pages.sh
+```
+4. Generate JSON files with LLM
+``` bash
+bsub < gpt5.2.bsub
+```
+5. Configure environment variables
+``` bash
+cd ../syscallm-injection
+source ./config/configure
+```
+6. Process JSON files to strace command options
+``` bash
+bash ../scripts/process_json.sh
+```
+7. Build the syscall monitor image
+``` bash
+bash ./scripts/build_monitor_image.sh
+```
+8. Build wrapped application image
+``` bash
+bash ./scripts/build_test_image.sh
+```
+9. Run injection
+``` bash
+bash ./scripts/batch.sh
 ```
 
 ## How it Works
