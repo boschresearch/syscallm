@@ -455,7 +455,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
 
         if idx == 0:
             # first subplot → show y-ticks
-            ax.set_yticks(np.arange(len(pivot.index)))
+            ax.set_yticks(np.arange(len(pivot.index)) + 0.5)
             ax.set_yticklabels(pivot.index, fontsize=13)
             ax.tick_params(axis='y', left=True, labelleft=True)
         else:
