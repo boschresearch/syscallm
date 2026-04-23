@@ -362,7 +362,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
 
     n_auts = len(auts)
 
-    fig = plt.figure(figsize=(2.5 * len(diff_df['mode'].unique()) * n_auts + 1.2, 18))
+    fig = plt.figure(figsize=(2.5 * len(diff_df['mode'].unique()) * n_auts + 1.2, 24))
     gs = GridSpec(1, n_auts + 1, figure=fig, width_ratios=[0.08] + [1] * n_auts, wspace=0.0)
 
     vmin, vmax = -100, 100
@@ -459,15 +459,16 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
                     )
 
         n_xticks = len(pivot.columns)
-        ax.text(int(n_xticks * 0.25), -3.5, 'nonnegative', ha='center', va='bottom', fontsize=13)
-        ax.text(int(n_xticks * 0.75), -3.5, 'negative', ha='center', va='bottom', fontsize=13)
+        ax.text(int(n_xticks * 0.25), -4.5, 'nonnegative', ha='center', va='bottom', fontsize=20)
+        ax.text(int(n_xticks * 0.75), -4.5, 'negative', ha='center', va='bottom', fontsize=20)
 
         ax.set_xticks(np.arange(n_xticks) + 0.5)
         xlabels = []
         for mode in mode_order:
             xlabels.append('Count')
-            xlabels.extend(["App\nCrash", "App\nHang", "Error\nExit", "SDC"])
-        ax.set_xticklabels(xlabels, rotation=90, fontsize=12)
+            xlabels.extend(["App Crash", "App Hang", "Error Exit", "SDC"])
+        ax.set_xticklabels(xlabels, rotation=90, fontsize=15)
+        ax.set_xlabel(None)
 
         ax.xaxis.set_label_position('top')
         ax.xaxis.set_ticks_position('top')
@@ -475,14 +476,14 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
         if idx == 0:
             # first subplot → show y-ticks
             ax.set_yticks(np.arange(len(pivot.index)) + 0.5)
-            ax.set_yticklabels(pivot.index, fontsize=13)
+            ax.set_yticklabels(pivot.index, fontsize=15)
             ax.tick_params(axis='y', left=True, labelleft=True)
         else:
             # all other subplots → hide y-ticks
             ax.set_yticks([])
             ax.set_yticklabels([])
             ax.tick_params(axis='y', left=False, labelleft=False)
-        ax.set_title(f"{aut.capitalize()}", fontsize=16, fontweight='bold', pad=20)
+        ax.set_title(f"{aut.capitalize()}", fontsize=22, fontweight='bold', pad=45)
  
     cbar_ax = fig.add_axes([0.1, 0.025, 0.89, 0.01])
     cbar = fig.colorbar(
@@ -494,7 +495,7 @@ def plot_outcome_per_syscall_heatmap(llm, random, text: bool = False):
     cbar.ax.xaxis.set_ticks_position('bottom')
     cbar.ax.xaxis.set_label_position('bottom')
 
-    plt.subplots_adjust(left=0.07, right=1, top=0.94, bottom=0.04, wspace=0)
+    plt.subplots_adjust(left=0.07, right=1, top=0.92, bottom=0.04, wspace=0)
     plt.savefig("figures/failure_heatmap.png", dpi=300)
     plt.close()
 
